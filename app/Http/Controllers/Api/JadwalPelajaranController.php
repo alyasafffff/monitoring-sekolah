@@ -8,94 +8,61 @@ use Illuminate\Http\Request;
 
 class JadwalPelajaranController extends Controller
 {
-    // 1. GET ALL (Tampilkan Jadwal Lengkap)
+    // 1. GET ALL
     public function index()
     {
-        // with(...) adalah "Eager Loading" biar query database gak berat
-        $jadwal = JadwalPelajaran::with(['mapel', 'kelas', 'guru:id,name,nip'])
-                    ->orderByRaw("FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu')")
-                    ->orderBy('jam_mulai', 'asc')
-                    ->get();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $jadwal
-        ], 200);
+        // Ambil jadwal beserta nama guru, kelas, dan mapelnya
+        $jadwal = JadwalPelajaran::with(['guru', 'kelas', 'mapel'])->get();
+        return response()->json(['success' => true, 'data' => $jadwal]);
     }
 
-    // 2. CREATE (Tambah Jadwal)
+    // 2. CREATE
     public function store(Request $request)
     {
         $request->validate([
-            'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
-            'jam_mulai' => 'required|date_format:H:i',
-            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
-            'mapel_id' => 'required|exists:mata_pelajaran,id',
-            'kelas_id' => 'required|exists:kelas,id',
-            'guru_id' => 'required|exists:users,id',
+            'guru_id'     => 'required|exists:users,id',
+            'kelas_id'    => 'required|exists:kelas,id',
+            'mapel_id'    => 'required|exists:mata_pelajaran,id', // Cek nama tabel mapel di DB
+            'hari'        => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
+            'jam_mulai'   => 'required',
+            'jam_selesai' => 'required',
         ]);
 
         $jadwal = JadwalPelajaran::create($request->all());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil dibuat!',
-            'data' => $jadwal
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Jadwal berhasil dibuat!', 'data' => $jadwal], 201);
     }
 
-    // 3. SHOW (Detail Satu Jadwal)
+    // 3. SHOW (Detail 1 Jadwal)
     public function show($id)
     {
-        $jadwal = JadwalPelajaran::with(['mapel', 'kelas', 'guru'])->find($id);
-
+        $jadwal = JadwalPelajaran::with(['guru', 'kelas', 'mapel'])->find($id);
+        
         if (!$jadwal) {
             return response()->json(['success' => false, 'message' => 'Jadwal tidak ditemukan'], 404);
         }
 
-        return response()->json(['success' => true, 'data' => $jadwal], 200);
+        return response()->json(['success' => true, 'data' => $jadwal]);
     }
 
-    // 4. UPDATE (Edit Jadwal)
+    // 4. UPDATE
     public function update(Request $request, $id)
     {
         $jadwal = JadwalPelajaran::find($id);
-
-        if (!$jadwal) {
-            return response()->json(['success' => false, 'message' => 'Jadwal tidak ditemukan'], 404);
-        }
-
-        $request->validate([
-            'hari' => 'required|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu',
-            'jam_mulai' => 'required|date_format:H:i',
-            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
-            'mapel_id' => 'required|exists:mata_pelajaran,id',
-            'kelas_id' => 'required|exists:kelas,id',
-            'guru_id' => 'required|exists:users,id',
-        ]);
+        if (!$jadwal) return response()->json(['success' => false, 'message' => 'Jadwal tidak ditemukan'], 404);
 
         $jadwal->update($request->all());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil diperbarui!'
-        ], 200);
+        return response()->json(['success' => true, 'message' => 'Jadwal berhasil diupdate!', 'data' => $jadwal]);
     }
 
-    // 5. DELETE (Hapus Jadwal)
+    // 5. DELETE
     public function destroy($id)
     {
         $jadwal = JadwalPelajaran::find($id);
-
-        if (!$jadwal) {
-            return response()->json(['success' => false, 'message' => 'Jadwal tidak ditemukan'], 404);
-        }
+        if (!$jadwal) return response()->json(['success' => false, 'message' => 'Jadwal tidak ditemukan'], 404);
 
         $jadwal->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Jadwal berhasil dihapus'
-        ], 200);
+        return response()->json(['success' => true, 'message' => 'Jadwal berhasil dihapus!']);
     }
 }

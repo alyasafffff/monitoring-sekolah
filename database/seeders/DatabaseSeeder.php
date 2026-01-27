@@ -6,36 +6,56 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Buat Data Users (Semua passwordnya: 12345678)
+        // ==========================================
+        // 1. DATA MASTER: USERS (GURU, STAFF, DLL)
+        // ==========================================
+        // Password default: 12345678
+        $password = Hash::make('12345678');
+
         $users = [
             // Admin TU
-            ['nip' => '11111', 'name' => 'Admin TU', 'password' => Hash::make('12345678'), 'role' => 'admin', 'created_at' => now()],
-            // Guru 1 (Akan jadi Wali Kelas 7A)
-            ['nip' => '22222', 'name' => 'Budi Santoso, S.Pd', 'password' => Hash::make('12345678'), 'role' => 'guru', 'created_at' => now()],
+            ['nip' => '11111', 'name' => 'Admin TU', 'password' => $password, 'role' => 'admin', 'created_at' => now()],
+            // Guru 1 (Wali Kelas 7A)
+            ['nip' => '22222', 'name' => 'Budi Santoso, S.Pd', 'password' => $password, 'role' => 'guru', 'created_at' => now()],
             // Guru 2 (Guru Mapel Biasa)
-            ['nip' => '33333', 'name' => 'Siti Aminah, M.Pd', 'password' => Hash::make('12345678'), 'role' => 'guru', 'created_at' => now()],
+            ['nip' => '33333', 'name' => 'Siti Aminah, M.Pd', 'password' => $password, 'role' => 'guru', 'created_at' => now()],
             // Guru BK
-            ['nip' => '44444', 'name' => 'Pak Tono (BK)', 'password' => Hash::make('12345678'), 'role' => 'bk', 'created_at' => now()],
+            ['nip' => '44444', 'name' => 'Pak Tono (BK)', 'password' => $password, 'role' => 'bk', 'created_at' => now()],
             // Kepala Sekolah
-            ['nip' => '55555', 'name' => 'Kepala Sekolah', 'password' => Hash::make('12345678'), 'role' => 'kepsek', 'created_at' => now()],
+            ['nip' => '55555', 'name' => 'Kepala Sekolah', 'password' => $password, 'role' => 'kepsek', 'created_at' => now()],
         ];
-        DB::table('users')->insert($users);
+        
+        // Gunakan insertOrIgnore atau upsert agar tidak error jika dijalankan ulang tanpa migrate:fresh
+        DB::table('users')->upsert($users, ['nip'], ['name', 'role', 'password']);
 
-        // 2. Buat Data Mata Pelajaran
+
+        // ==========================================
+        // 2. DATA MASTER: MATA PELAJARAN
+        // ==========================================
+        // Pastikan nama tabel di migration sesuai ('mata_pelajaran' atau 'mata_pelajarans')
         $mapelId1 = DB::table('mata_pelajaran')->insertGetId(['kode_mapel' => 'MTK01', 'nama_mapel' => 'Matematika', 'created_at' => now()]);
         $mapelId2 = DB::table('mata_pelajaran')->insertGetId(['kode_mapel' => 'IPA01', 'nama_mapel' => 'Ilmu Pengetahuan Alam', 'created_at' => now()]);
 
-        // 3. Buat Data Kelas (Pak Budi NIP 22222 jadi Wali Kelas 7A)
-        $guru1_id = DB::table('users')->where('nip', '22222')->first()->id;
+
+        // ==========================================
+        // 3. DATA MASTER: KELAS
+        // ==========================================
+        // Ambil ID Guru Pak Budi untuk jadi Wali Kelas
+        $guru1_id = DB::table('users')->where('nip', '22222')->value('id');
+        
         $kelas7a_id = DB::table('kelas')->insertGetId(['nama_kelas' => '7A', 'wali_kelas_id' => $guru1_id, 'created_at' => now()]);
         $kelas7b_id = DB::table('kelas')->insertGetId(['nama_kelas' => '7B', 'wali_kelas_id' => null, 'created_at' => now()]);
 
-        // 4. Buat Data Siswa Kelas 7A (DENGAN IDENTITAS LENGKAP)
+
+        // ==========================================
+        // 4. DATA MASTER: SISWA
+        // ==========================================
         $siswa = [
             [
                 'nisn' => '001', 
@@ -73,17 +93,26 @@ class DatabaseSeeder extends Seeder
         ];
         DB::table('siswa')->insert($siswa);
 
-        // 5. Buat Data Jadwal Pelajaran (Hari ini)
-        // Kita asumsikan hari ini Senin, Pak Budi ngajar MTK di 7A jam 07:00 - 08:30
-        $hari_ini = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'][now()->dayOfWeek - 1] ?? 'Senin';
+
+        // ==========================================
+        // 5. DATA JADWAL (UNTUK TESTING API JURNAL)
+        // ==========================================
+        // Otomatis membuat jadwal untuk HARI INI agar bisa langsung test input jurnal
+        $hari_ini = Carbon::now()->isoFormat('dddd'); // Senin, Selasa, dst (Pastikan locale ID aktif)
+        // Fallback manual jika Carbon locale bukan ID
+        if (!in_array($hari_ini, ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'])) {
+            $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            $hari_ini = $days[now()->dayOfWeek];
+        }
+
         DB::table('jadwal_pelajaran')->insert([
-            'kelas_id' => $kelas7a_id,
-            'mapel_id' => $mapelId1,
-            'guru_id' => $guru1_id,
-            'hari' => $hari_ini,
-            'jam_mulai' => '07:00:00',
+            'kelas_id'    => $kelas7a_id,
+            'mapel_id'    => $mapelId1,   // Matematika
+            'guru_id'     => $guru1_id,   // Pak Budi
+            'hari'        => $hari_ini,   // Hari ini
+            'jam_mulai'   => '07:00:00',
             'jam_selesai' => '08:30:00',
-            'created_at' => now(),
+            'created_at'  => now(),
         ]);
     }
 }

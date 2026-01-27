@@ -8,30 +8,21 @@ use Illuminate\Http\Request;
 
 class JurnalController extends Controller
 {
-    // 1. GET ALL (Lihat Riwayat Jurnal)
-    // 1. GET ALL (Lihat Riwayat Jurnal Lengkap)
+    // 1. GET ALL
     public function index()
     {
         $jurnal = Jurnal::with([
-            // Ambil data jadwal, dan sekalian ambil data teman-temannya
-            'jadwal.guru:id,name,nip',       // Ambil ID, Nama, NIP Guru saja
-            'jadwal.kelas:id,nama_kelas',    // Ambil ID, Nama Kelas saja
-            'jadwal.mapel:id,nama_mapel'     // Ambil ID, Nama Mapel saja
-        ])
-        ->orderBy('tanggal', 'desc')
-        ->get();
+            'jadwal.guru:id,name,nip',
+            'jadwal.kelas:id,nama_kelas',
+            'jadwal.mapel:id,nama_mapel'
+        ])->orderBy('tanggal', 'desc')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $jurnal
-        ], 200);
+        return response()->json(['success' => true, 'data' => $jurnal]);
     }
 
-    // 2. CREATE (Simpan Jurnal Teks)
-    // 2. CREATE (Simpan Jurnal)
+    // 2. CREATE (Pakai updateOrCreate biar tidak duplikat di hari yang sama)
     public function store(Request $request)
     {
-        // Validasi
         $request->validate([
             'jadwal_id' => 'required|exists:jadwal_pelajaran,id',
             'tanggal'   => 'required|date',
@@ -39,25 +30,37 @@ class JurnalController extends Controller
             'status'    => 'in:Hadir,Izin,Sakit'
         ]);
 
-        // Simpan ke Database
-        $jurnal = Jurnal::create([
-            'jadwal_id' => $request->jadwal_id,
-            'tanggal'   => $request->tanggal,
-            'materi'    => $request->materi,
-            'status'    => $request->status ?? 'Hadir'
-        ]);
+        // Logic: Jika Jurnal untuk jadwal ini di tanggal ini sudah ada, Update. Jika belum, Create.
+        $jurnal = Jurnal::updateOrCreate(
+            [
+                'jadwal_id' => $request->jadwal_id,
+                'tanggal'   => $request->tanggal
+            ],
+            [
+                'materi' => $request->materi,
+                'status' => $request->status ?? 'Hadir'
+            ]
+        );
 
-        // <--- TAMBAHAN PENTING: Kita suruh Laravel ambil data relasinya sekarang juga
-        $jurnal->load([
-            'jadwal.guru:id,name,nip',
-            'jadwal.kelas:id,nama_kelas',
-            'jadwal.mapel:id,nama_mapel'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Jurnal berhasil disimpan!', 'data' => $jurnal], 201);
+    }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Jurnal berhasil disimpan!',
-            'data' => $jurnal
-        ], 201);
+    // 3. SHOW
+    public function show($id)
+    {
+        $jurnal = Jurnal::with(['jadwal.guru', 'jadwal.kelas', 'jadwal.mapel'])->find($id);
+        if (!$jurnal) return response()->json(['success' => false, 'message' => 'Jurnal tidak ditemukan'], 404);
+
+        return response()->json(['success' => true, 'data' => $jurnal]);
+    }
+
+    // 4. DELETE
+    public function destroy($id)
+    {
+        $jurnal = Jurnal::find($id);
+        if (!$jurnal) return response()->json(['success' => false, 'message' => 'Jurnal tidak ditemukan'], 404);
+
+        $jurnal->delete();
+        return response()->json(['success' => true, 'message' => 'Jurnal berhasil dihapus!']);
     }
 }

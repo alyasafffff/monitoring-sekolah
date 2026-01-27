@@ -10,31 +10,23 @@ class JadwalPelajaran extends Model
     use HasFactory;
 
     protected $table = 'jadwal_pelajaran';
+    protected $guarded = [];
 
-    protected $fillable = [
-        'hari',
-        'jam_mulai',
-        'jam_selesai',
-        'mapel_id',
-        'kelas_id',
-        'guru_id',
-    ];
-
-    // 🔗 Relasi ke Mapel
-    public function mapel()
+    // Relasi ke Guru (User)
+    public function guru()
     {
-        return $this->belongsTo(MataPelajaran::class, 'mapel_id');
+        return $this->belongsTo(User::class, 'guru_id');
     }
 
-    // 🔗 Relasi ke Kelas
+    // Relasi ke Kelas
     public function kelas()
     {
         return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
-    // 🔗 Relasi ke Guru (User)
-    public function guru()
+    // Relasi ke Mapel
+    public function mapel()
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(MataPelajaran::class, 'mapel_id'); // Pastikan nama model 'MataPelajaran' benar
     }
 }

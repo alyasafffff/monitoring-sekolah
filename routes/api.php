@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\PresensiController;
 use App\Http\Controllers\Api\JurnalController;
 use App\Http\Controllers\Api\IzinController;
 use App\Http\Controllers\Api\MataPelajaranController;
-use App\Http\Controllers\Api\KelasController;
+
 
 // Jalur Login (Tidak perlu token)
 Route::post('/login', [AuthController::class, 'login']);
