@@ -35,11 +35,41 @@ class DatabaseSeeder extends Seeder
         $kelas7a_id = DB::table('kelas')->insertGetId(['nama_kelas' => '7A', 'wali_kelas_id' => $guru1_id, 'created_at' => now()]);
         $kelas7b_id = DB::table('kelas')->insertGetId(['nama_kelas' => '7B', 'wali_kelas_id' => null, 'created_at' => now()]);
 
-        // 4. Buat Data Siswa Kelas 7A
+        // 4. Buat Data Siswa Kelas 7A (DENGAN IDENTITAS LENGKAP)
         $siswa = [
-            ['nisn' => '001', 'nama_siswa' => 'Ahmad Fikri', 'kelas_id' => $kelas7a_id, 'qr_token' => Str::random(40), 'created_at' => now()],
-            ['nisn' => '002', 'nama_siswa' => 'Bunga Citra', 'kelas_id' => $kelas7a_id, 'qr_token' => Str::random(40), 'created_at' => now()],
-            ['nisn' => '003', 'nama_siswa' => 'Candra Wijaya', 'kelas_id' => $kelas7a_id, 'qr_token' => Str::random(40), 'created_at' => now()],
+            [
+                'nisn' => '001', 
+                'nama_siswa' => 'Ahmad Fikri', 
+                'kelas_id' => $kelas7a_id, 
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2011-03-10',
+                'alamat' => 'Jl. Pahlawan No. 1, Prigen',
+                'no_hp_ortu' => '081234567890',
+                'qr_token' => Str::random(40), 
+                'created_at' => now()
+            ],
+            [
+                'nisn' => '002', 
+                'nama_siswa' => 'Bunga Citra', 
+                'kelas_id' => $kelas7a_id, 
+                'jenis_kelamin' => 'P',
+                'tanggal_lahir' => '2011-07-22',
+                'alamat' => 'Jl. Raya Trawas No. 45, Prigen',
+                'no_hp_ortu' => '085712345678',
+                'qr_token' => Str::random(40), 
+                'created_at' => now()
+            ],
+            [
+                'nisn' => '003', 
+                'nama_siswa' => 'Candra Wijaya', 
+                'kelas_id' => $kelas7a_id, 
+                'jenis_kelamin' => 'L',
+                'tanggal_lahir' => '2011-11-05',
+                'alamat' => 'Perumahan Indah Asri Blok B, Prigen',
+                'no_hp_ortu' => '087898765432',
+                'qr_token' => Str::random(40), 
+                'created_at' => now()
+            ],
         ];
         DB::table('siswa')->insert($siswa);
 

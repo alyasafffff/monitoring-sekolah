@@ -13,12 +13,17 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('nip', 20)->unique(); // NIP/NUPTK untuk login
+            $table->string('nip', 20)->unique();
             $table->string('name');
             $table->string('password');
-            // Role: admin, guru, bk, kepsek (Wali kelas gabung di 'guru')
             $table->enum('role', ['admin', 'guru', 'bk', 'kepsek']);
-            $table->rememberToken();
+
+            // --- TAMBAHAN BARU ---
+            $table->string('no_hp', 15)->nullable(); // Buat notifikasi WA
+            $table->string('foto_profil')->nullable(); // Simpan nama file foto
+            $table->boolean('is_active')->default(true); // Biar bisa nonaktifkan guru pensiun
+
+            $table->rememberToken(); // <-- Tetap ada sesuai requestmu
             $table->timestamps();
         });
     }

@@ -13,11 +13,16 @@ return new class extends Migration
     {
         Schema::create('siswa', function (Blueprint $table) {
             $table->id();
-            $table->string('nisn', 15)->unique();
+            $table->string('nisn', 20)->unique();
             $table->string('nama_siswa');
+            $table->enum('jenis_kelamin', ['L', 'P']); // L = Laki-laki, P = Perempuan
+            $table->date('tanggal_lahir')->nullable();
+            $table->text('alamat')->nullable();
+            $table->string('no_hp_ortu', 15)->nullable(); // Penting buat dihubungi BK
+            // --------------------------------
+
             $table->foreignId('kelas_id')->constrained('kelas')->cascadeOnDelete();
-            // String acak untuk generate QR Code (biar tidak gampang dipalsukan)
-            $table->string('qr_token', 60)->unique();
+            $table->string('qr_token')->unique();
             $table->timestamps();
         });
     }

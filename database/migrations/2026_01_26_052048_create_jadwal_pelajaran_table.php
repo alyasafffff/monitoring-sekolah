@@ -6,29 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('jadwal_pelajaran', function (Blueprint $table) {
             $table->id();
+            
+            // Relasi (Wajib ada)
             $table->foreignId('kelas_id')->constrained('kelas')->cascadeOnDelete();
             $table->foreignId('mapel_id')->constrained('mata_pelajaran')->cascadeOnDelete();
             $table->foreignId('guru_id')->constrained('users')->cascadeOnDelete();
-            $table->enum('hari', ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']);
+            
+            // Waktu
+            $table->enum('hari', ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']);
             $table->time('jam_mulai');
             $table->time('jam_selesai');
-            // Jurnal KBM Guru (Diisi setelah presensi)
-            $table->text('jurnal_materi')->nullable();
-            $table->string('foto_kelas')->nullable();
+            
+            // Kolom jurnal_materi & foto_kelas SUDAH DIHAPUS dari sini.
+            // Kita fokus jadwal dulu.
+            
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('jadwal_pelajaran');
