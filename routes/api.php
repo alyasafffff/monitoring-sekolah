@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\IzinController;
 use App\Http\Controllers\Api\MataPelajaranController;
 
 
+
 // Jalur Login (Tidak perlu token)
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -71,3 +72,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/jurnal', [App\Http\Controllers\Api\JurnalController::class, 'index']);
     Route::post('/admin/jurnal', [App\Http\Controllers\Api\JurnalController::class, 'store']);
 });
+
