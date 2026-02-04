@@ -4,72 +4,69 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\JadwalController;
-use App\Http\Controllers\Api\PresensiController;
 use App\Http\Controllers\Api\JurnalController;
-use App\Http\Controllers\Api\IzinController;
-use App\Http\Controllers\Api\MataPelajaranController;
+// Controller PresensiController & IzinController bisa ditambah nanti jika fiturnya sudah dibuat
 
+/*
+|--------------------------------------------------------------------------
+| API Routes (KHUSUS MOBILE APP GURU)
+|--------------------------------------------------------------------------
+|
+| Route ini khusus melayani aplikasi Flutter untuk Guru.
+| Fitur CRUD Admin (Siswa, Kelas, User, dll) sudah dihapus karena
+| Admin mengelolanya lewat Web Dashboard, bukan lewat HP.
+|
+*/
 
+// ============================================================================
+// 1. PUBLIC ROUTES (Bisa diakses tanpa Login)
+// ============================================================================
 
-// Jalur Login (Tidak perlu token)
+// Login Guru (Untuk dapat Token)
 Route::post('/login', [AuthController::class, 'login']);
 
-// Jalur yang butuh Token (Harus login dulu)
+
+// ============================================================================
+// 2. PROTECTED ROUTES (Harus Login & Punya Token)
+// ============================================================================
 Route::middleware('auth:sanctum')->group(function () {
 
-    // API Cek Data Diri Guru
+    // --- A. AUTH & PROFILE ---
+    
+    // Cek Profile Guru yang sedang login
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    // API Lihat Jadwal Mengajar Hari Ini
-    Route::get('/jadwal-hari-ini', [JadwalController::class, 'jadwalHariIni']); // <--- Rute Jadwal
-    // API Scan QR Code
-    Route::post('/scan-qr', [PresensiController::class, 'scanQr']);
-    // API Simpan Jurnal & Deteksi Alpha
-    Route::post('/simpan-jurnal', [JurnalController::class, 'simpanJurnal']);
-    // API Input Izin oleh Wali Kelas
-    Route::post('/input-izin', [IzinController::class, 'inputIzin']);
-    // mulaiKelas:
-    Route::post('/mulai-kelas', [JadwalController::class, 'mulaiKelas']);
-
-    // ADMIN - CRUD SISWA
-    Route::get('/admin/siswa', [App\Http\Controllers\Api\SiswaController::class, 'index']);
-    Route::post('/admin/siswa', [App\Http\Controllers\Api\SiswaController::class, 'store']);
-    Route::put('/admin/siswa/{id}', [App\Http\Controllers\Api\SiswaController::class, 'update']);
-    Route::delete('/admin/siswa/{id}', [App\Http\Controllers\Api\SiswaController::class, 'destroy']);
-
-    // ADMIN - CRUD USER (Admin, Guru, BK, Kepsek)
-    Route::get('/admin/users', [App\Http\Controllers\Api\UserController::class, 'index']);
-    Route::post('/admin/users', [App\Http\Controllers\Api\UserController::class, 'store']);
-    Route::put('/admin/users/{id}', [App\Http\Controllers\Api\UserController::class, 'update']);
-    Route::delete('/admin/users/{id}', [App\Http\Controllers\Api\UserController::class, 'destroy']);
-
-    // ADMIN - CRUD KELAS
-    Route::get('/admin/kelas', [App\Http\Controllers\Api\KelasController::class, 'index']);
-    Route::get('/admin/kelas/{id}', [App\Http\Controllers\Api\KelasController::class, 'show']);
-    Route::post('/admin/kelas', [App\Http\Controllers\Api\KelasController::class, 'store']);
-    Route::put('/admin/kelas/{id}', [App\Http\Controllers\Api\KelasController::class, 'update']);
-    Route::delete('/admin/kelas/{id}', [App\Http\Controllers\Api\KelasController::class, 'destroy']);
+    // Logout (Hapus Token di HP)
+    Route::post('/logout', [AuthController::class, 'logout']);
 
 
+    // --- B. FITUR UTAMA: JADWAL & MENGAJAR ---
 
-    // ADMIN - CRUD MATA PELAJARAN
-    Route::get('/admin/mapel', [MataPelajaranController::class, 'index']);
-    Route::get('/admin/mapel/{id}', [MataPelajaranController::class, 'show']);
-    Route::post('/admin/mapel', [MataPelajaranController::class, 'store']);
-    Route::put('/admin/mapel/{id}', [MataPelajaranController::class, 'update']);
-    Route::delete('/admin/mapel/{id}', [MataPelajaranController::class, 'destroy']);
+    // 1. Halaman Home: Lihat Jadwal Mengajar Hari Ini
+    // Output: List jadwal (Jam, Kelas, Mapel)
+    Route::get('/jadwal-hari-ini', [JadwalController::class, 'index']); 
 
-    // ADMIN - CRUD JADWAL PELAJARAN
-    Route::get('/admin/jadwal', [App\Http\Controllers\Api\JadwalPelajaranController::class, 'index']);
-    Route::get('/admin/jadwal/{id}', [App\Http\Controllers\Api\JadwalPelajaranController::class, 'show']);
-    Route::post('/admin/jadwal', [App\Http\Controllers\Api\JadwalPelajaranController::class, 'store']);
-    Route::put('/admin/jadwal/{id}', [App\Http\Controllers\Api\JadwalPelajaranController::class, 'update']);
-    Route::delete('/admin/jadwal/{id}', [App\Http\Controllers\Api\JadwalPelajaranController::class, 'destroy']);
+    // 2. Klik "Mulai Kelas": Membuat Sesi Jurnal Baru & Generate Absen Default
+    // Input: jadwal_id
+    // Output: ID Jurnal baru & List Siswa
+    Route::post('/mulai-kelas', [JurnalController::class, 'store']); 
 
-    // --- JURNAL / ABSENSI ---
-    Route::get('/admin/jurnal', [App\Http\Controllers\Api\JurnalController::class, 'index']);
-    Route::post('/admin/jurnal', [App\Http\Controllers\Api\JurnalController::class, 'store']);
+    // 3. Halaman Absensi: Ambil Daftar Siswa untuk Diabsen
+    // Input: ID Jurnal (didapat dari respon 'mulai-kelas')
+    // Output: List Nama Siswa & Status Kehadiran (Default: Hadir)
+    Route::get('/jurnal/{jurnal_id}/presensi', [JurnalController::class, 'getPresensiSiswa']);
+
+    // 4. Klik "Simpan": Update Status Kehadiran & Simpan Materi Jurnal
+    // Input: Materi, Status Guru, List Absen Siswa (Array)
+    Route::post('/jurnal/{jurnal_id}/update', [JurnalController::class, 'updateJurnal']);
+
+
+    // --- C. FITUR TAMBAHAN (WALI KELAS) ---
+    // (Aktifkan jika controller-nya sudah siap nanti)
+    
+    // Route::post('/input-izin', [IzinController::class, 'inputIzin']); 
+    // Route::get('/laporan-kelas', [LaporanController::class, 'index']);
+
 });
-
