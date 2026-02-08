@@ -13,11 +13,25 @@ return new class extends Migration
     {
         Schema::create('izin_siswa', function (Blueprint $table) {
             $table->id();
+            
+            // Relasi Siswa & Wali Kelas
             $table->foreignId('siswa_id')->constrained('siswa')->cascadeOnDelete();
             $table->foreignId('wali_kelas_id')->constrained('users')->cascadeOnDelete();
+            
+            // Info Izin
             $table->date('tanggal_izin');
+            
+            // Status utama
             $table->enum('status', ['Sakit', 'Izin', 'Dispensasi']);
-            $table->string('foto_surat')->nullable(); // Bukti dari orang tua
+            
+            // --- TAMBAHAN KOLOM KETERANGAN ---
+            // Kita pakai 'text' agar muat panjang, dan 'nullable' karena opsional
+            $table->text('keterangan')->nullable(); 
+            
+            // (Opsional) Jika fitur jam izin parsial mau diaktifkan nanti
+            $table->time('jam_mulai')->nullable();
+            $table->time('jam_selesai')->nullable();
+
             $table->timestamps();
         });
     }

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\IzinController;
 use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\JurnalController;
 // Controller PresensiController & IzinController bisa ditambah nanti jika fiturnya sudah dibuat
@@ -32,7 +33,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
 
     // --- A. AUTH & PROFILE ---
-    
+
     // Cek Profile Guru yang sedang login
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -46,12 +47,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 1. Halaman Home: Lihat Jadwal Mengajar Hari Ini
     // Output: List jadwal (Jam, Kelas, Mapel)
-    Route::get('/jadwal-hari-ini', [JadwalController::class, 'index']); 
-
-    // 2. Klik "Mulai Kelas": Membuat Sesi Jurnal Baru & Generate Absen Default
-    // Input: jadwal_id
-    // Output: ID Jurnal baru & List Siswa
-    Route::post('/mulai-kelas', [JurnalController::class, 'store']); 
+    // Di file routes/api.php
+    Route::get('/jadwal-hari-ini', [JadwalController::class, 'index']); // <--- Panggil 'index'
+    Route::post('/mulai-kelas', [JadwalController::class, 'mulaiKelas']); // <--- Tambah ini
+    Route::get('/walikelas/siswa', [IzinController::class, 'getSiswa']);
+    Route::post('/walikelas/izin', [IzinController::class, 'inputIzin']);
+    Route::get('/jurnal/{jurnal_id}/presensi', [JurnalController::class, 'getPresensiSiswa']);
+    Route::post('/jurnal/{jurnal_id}/update', [JurnalController::class, 'updateJurnal']);
 
     // 3. Halaman Absensi: Ambil Daftar Siswa untuk Diabsen
     // Input: ID Jurnal (didapat dari respon 'mulai-kelas')
@@ -61,11 +63,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // 4. Klik "Simpan": Update Status Kehadiran & Simpan Materi Jurnal
     // Input: Materi, Status Guru, List Absen Siswa (Array)
     Route::post('/jurnal/{jurnal_id}/update', [JurnalController::class, 'updateJurnal']);
+    Route::get('/riwayat-mengajar', [JurnalController::class, 'getRiwayat']);
 
 
     // --- C. FITUR TAMBAHAN (WALI KELAS) ---
     // (Aktifkan jika controller-nya sudah siap nanti)
-    
+
     // Route::post('/input-izin', [IzinController::class, 'inputIzin']); 
     // Route::get('/laporan-kelas', [LaporanController::class, 'index']);
 

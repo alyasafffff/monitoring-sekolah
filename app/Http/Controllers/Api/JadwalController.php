@@ -6,103 +6,161 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-// ---> TAMBAHAN: Panggil Model yang dibutuhkan <---
-use App\Models\Jadwal;
-use App\Models\Presensi;
+// use App\Models\Jadwal; // Not strictly needed if using DB facade, but okay to keep if used elsewhere
 
 class JadwalController extends Controller
 {
-    public function jadwalHariIni(Request $request)
+    // 1. API UNTUK HALAMAN HOME (GET)
+    public function index(Request $request)
     {
-        // 1. Ambil ID Guru yang sedang login (lewat token)
-        $guru_id = $request->user()->id;
+        // A. Ambil User Login
+        $user = $request->user();
 
-        // 2. Deteksi Hari Ini dalam Bahasa Indonesia (Senin, Selasa, dst)
+        // B. Set Hari Ini (Format Indo: Senin, Selasa...)
         Carbon::setLocale('id');
-        $hari_ini = Carbon::now()->isoFormat('dddd'); 
+        $hariIni = Carbon::now()->isoFormat('dddd');
+        $tanggalHariIni = Carbon::now()->format('Y-m-d');
 
-        // 3. Ambil data jadwal dari database (Gabungkan dengan tabel kelas & mapel)
+        // C. Query Jadwal (Join Kelas & Mapel)
         $jadwal = DB::table('jadwal_pelajaran')
             ->join('kelas', 'jadwal_pelajaran.kelas_id', '=', 'kelas.id')
             ->join('mata_pelajaran', 'jadwal_pelajaran.mapel_id', '=', 'mata_pelajaran.id')
-            ->where('jadwal_pelajaran.guru_id', $guru_id)
-            ->where('jadwal_pelajaran.hari', $hari_ini)
+            ->where('jadwal_pelajaran.guru_id', $user->id)
+            ->where('jadwal_pelajaran.hari', $hariIni)
             ->select(
-                'jadwal_pelajaran.id as jadwal_id',
+                'jadwal_pelajaran.id', // ID Jadwal
                 'kelas.nama_kelas',
                 'mata_pelajaran.nama_mapel',
                 'jadwal_pelajaran.jam_mulai',
-                'jadwal_pelajaran.jam_selesai',
-                'jadwal_pelajaran.jurnal_materi'
+                'jadwal_pelajaran.jam_selesai'
             )
             ->orderBy('jadwal_pelajaran.jam_mulai', 'asc')
             ->get();
 
-        // 4. Kirim balasan ke Flutter
-        if($jadwal->isEmpty()){
-            return response()->json([
-                'success' => true,
-                'message' => 'Tidak ada jadwal mengajar hari ini.',
-                'hari' => $hari_ini,
-                'data' => []
-            ], 200);
-        }
+        // D. [PENTING] Cek Status Jurnal untuk setiap Jadwal
+        $dataLengkap = $jadwal->map(function ($item) use ($tanggalHariIni) {
 
+            // Cek apakah sudah ada Jurnal untuk jadwal ini di tanggal ini?
+            $jurnal = DB::table('jurnals')
+                ->where('jadwal_id', $item->id)
+                ->where('tanggal', $tanggalHariIni)
+                ->first();
+
+            if ($jurnal) {
+                // Kalau ada, ambil statusnya (proses/selesai) dan ID-nya
+                $item->status_jurnal = $jurnal->status_pengisian;
+                $item->jurnal_id = $jurnal->id;
+            } else {
+                // Kalau belum ada, berarti belum dimulai
+                $item->status_jurnal = 'belum_mulai';
+                $item->jurnal_id = null;
+            }
+
+            return $item;
+        });
+
+        // E. Kirim ke Flutter
         return response()->json([
             'success' => true,
-            'message' => 'Berhasil mengambil jadwal.',
-            'hari' => $hari_ini,
-            'data' => $jadwal
+            'message' => 'List Jadwal Hari Ini',
+            'hari' => $hariIni,
+            'data' => $dataLengkap
         ], 200);
     }
 
     public function mulaiKelas(Request $request)
     {
-        // 1. Validasi input (Menggunakan nama tabel jadwal_pelajaran)
-        $request->validate([
-            'jadwal_id' => 'required|exists:jadwal_pelajaran,id'
-        ]);
-
-        // 2. Ambil data jadwal
-        $jadwal = Jadwal::find($request->jadwal_id);
-
-        // 3. Pastikan milik guru yang login
-        if ($jadwal->guru_id !== $request->user()->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak berhak mengakses kelas ini.'
-            ], 403);
-        }
-
-        // 4. Cek apakah kelas ini sudah dibuka hari ini (biar tidak dobel)
-        $presensiHariIni = Presensi::where('jadwal_id', $jadwal->id)
-                                   ->where('tanggal', now()->toDateString())
-                                   ->first();
-
-        if ($presensiHariIni) {
+        // KITA BUNGKUS DENGAN TRY-CATCH AGAR KETAHUAN ERRORNYA
+        try {
+            // A. Validasi
+            $request->validate([
+                'jadwal_id' => 'required|exists:jadwal_pelajaran,id'
+            ]);
+    
+            $tanggalHariIni = \Carbon\Carbon::now()->format('Y-m-d');
+    
+            // B. Cek apakah Jurnal sudah ada?
+            // (Kode cek jurnal yang sudah ada sebelumnya tetap sama)
+            $cekJurnal = DB::table('jurnals')
+                ->where('jadwal_id', $request->jadwal_id)
+                ->where('tanggal', $tanggalHariIni)
+                ->first();
+    
+            if ($cekJurnal) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kelas sudah dimulai sebelumnya',
+                    'data' => ['id' => $cekJurnal->id]
+                ], 200);
+            }
+    
+            // C. Buat Jurnal Baru
+            $jurnalId = DB::table('jurnals')->insertGetId([
+                'jadwal_id' => $request->jadwal_id,
+                'tanggal' => $tanggalHariIni,
+                'materi' => '-', 
+                'status_pengisian' => 'proses',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+    
+            // D. GENERATE ABSENSI OTOMATIS
+            $jadwal = DB::table('jadwal_pelajaran')->where('id', $request->jadwal_id)->first();
+            $siswaKelas = DB::table('siswa')->where('kelas_id', $jadwal->kelas_id)->get();
+            $jamMulaiKelas = $jadwal->jam_mulai; 
+    
+            $dataPresensi = [];
+            
+            foreach($siswaKelas as $siswa) {
+                
+                // --- PERUBAHAN UTAMA DISINI ---
+                // Default jadi 'Alpha' (Merah/Belum Scan)
+                $statusAwal = 'Alpha'; 
+    
+                // Cek Izin/Sakit dari Wali Kelas
+                $izin = DB::table('izin_siswa')
+                    ->where('siswa_id', $siswa->id)
+                    ->where('tanggal_izin', $tanggalHariIni)
+                    ->first();
+    
+                if ($izin) {
+                    // Logika Cek Izin
+                    if ($izin->jam_mulai == null) {
+                        // Full Day
+                        $statusAwal = $izin->status;
+                    } else {
+                        // Jam Tertentu
+                        if ($jamMulaiKelas >= $izin->jam_mulai && $jamMulaiKelas < $izin->jam_selesai) {
+                            $statusAwal = $izin->status;
+                        }
+                    }
+                }
+    
+                $dataPresensi[] = [
+                    'jurnal_id' => $jurnalId,
+                    'siswa_id' => $siswa->id,
+                    'status' => $statusAwal,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+    
+            if (!empty($dataPresensi)) {
+                DB::table('presensi_detail')->insert($dataPresensi);
+            }
+    
             return response()->json([
                 'success' => true,
-                'message' => 'Kelas ini sudah dimulai sebelumnya.',
-                'data' => [
-                    'presensi_id' => $presensiHariIni->id
-                ]
-            ], 200);
+                'message' => 'Kelas Berhasil Dimulai',
+                'data' => ['id' => $jurnalId]
+            ], 201);
+
+        } catch (\Exception $e) {
+            // INI BAGIAN PENTING: TANGKAP ERROR DAN KIRIM KE HP
+            return response()->json([
+                'success' => false,
+                'message' => 'Server Error: ' . $e->getMessage() . ' (Line: ' . $e->getLine() . ')'
+            ], 500);
         }
-
-        // 5. Buka SESI KELAS baru di tabel presensi
-        $presensi = Presensi::create([
-            'jadwal_id' => $jadwal->id,
-            'tanggal' => now()->toDateString(),
-            'status' => 'buka' // Guru siap melakukan scan
-        ]);
-
-        // 6. Kembalikan ID Presensi ke aplikasi
-        return response()->json([
-            'success' => true,
-            'message' => 'Kelas berhasil dimulai. Silakan scan kartu siswa.',
-            'data' => [
-                'presensi_id' => $presensi->id
-            ]
-        ], 201);
     }
 }

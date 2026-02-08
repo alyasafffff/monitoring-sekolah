@@ -30,8 +30,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // D. [TAMBAHAN] Cek Status Aktif
-        // Penting! Jika admin menonaktifkan guru, dia gaboleh login.
+        // D. Cek Status Aktif
         if (!$user->is_active) {
             return response()->json([
                 'success' => false,
@@ -39,36 +38,35 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // E. Cek Role (Pastikan cuma Guru yang masuk lewat HP)
-        // Opsional: Kalau Kepsek/Admin mau login HP juga, hapus bagian ini.
-        if ($user->role !== 'guru' && $user->role !== 'bk' && $user->role !== 'kepsek') {
-             // Sesuaikan dengan kebutuhan siapa aja yg boleh login app
+        // ============================================================
+        // E. CEK ROLE (PERUBAHAN DISINI)
+        // ============================================================
+        // Jika role user BUKAN 'guru', langsung tolak!
+        if ($user->role !== 'guru') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses Ditolak. Aplikasi ini khusus untuk Guru.'
+            ], 403); 
         }
 
-        // ==========================================
         // F. CEK KHUSUS: Apakah Guru ini Wali Kelas?
-        // ==========================================
         $is_walikelas = false;
         $kelas_id = null;
         $nama_kelas = null;
 
-        if ($user->role === 'guru') {
-            $kelas = DB::table('kelas')->where('wali_kelas_id', $user->id)->first();
-            
-            if ($kelas) {
-                $is_walikelas = true;
-                $kelas_id = $kelas->id;
-                $nama_kelas = $kelas->nama_kelas;
-            }
+        // Kita tidak perlu cek if ($user->role === 'guru') lagi karena sudah disaring di poin E
+        $kelas = DB::table('kelas')->where('wali_kelas_id', $user->id)->first();
+        
+        if ($kelas) {
+            $is_walikelas = true;
+            $kelas_id = $kelas->id;
+            $nama_kelas = $kelas->nama_kelas;
         }
 
-        // G. Hapus token lama (Opsional, biar 1 HP 1 Login)
-        // $user->tokens()->delete(); 
-
-        // H. Buat Token Baru
+        // G. Buat Token Baru
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // I. Kirim Respon JSON
+        // H. Kirim Respon
         return response()->json([
             'success' => true,
             'message' => 'Login Berhasil',
@@ -79,9 +77,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'nip' => $user->nip,
                 'role' => $user->role,
-                'photo' => 'https://ui-avatars.com/api/?name='.urlencode($user->name), // Bonus: Avatar default
-                
-                // Data Spesifik Wali Kelas
+                'photo' => 'https://ui-avatars.com/api/?name='.urlencode($user->name),
                 'is_walikelas' => $is_walikelas,
                 'kelas_id' => $kelas_id,
                 'nama_kelas' => $nama_kelas

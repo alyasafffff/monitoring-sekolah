@@ -18,11 +18,20 @@ return new class extends Migration
             $table->foreignId('jadwal_id')->constrained('jadwal_pelajaran')->cascadeOnDelete();
             
             $table->date('tanggal'); 
-            $table->text('materi'); // <--- Ini yang menampung isi jurnal (String)
             
-            // Status kehadiran
-            $table->enum('status', ['Hadir', 'Izin', 'Sakit'])->default('Hadir');
+            // MATERI (Inti Pembelajaran)
+            $table->text('materi')->nullable(); 
+
+            // CATATAN TAMBAHAN (Masalah Fasilitas/Siswa/Lainnya)
+            // Kita taruh setelah materi, sifatnya nullable (boleh kosong)
+            $table->text('catatan')->nullable(); 
             
+            // Status Kehadiran GURU
+            $table->enum('status_guru', ['Hadir', 'Izin', 'Sakit'])->default('Hadir');
+
+            // Status Pengisian Jurnal
+            $table->enum('status_pengisian', ['proses', 'selesai'])->default('proses');
+
             $table->timestamps();
         });
     }
