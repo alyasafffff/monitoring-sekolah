@@ -4,6 +4,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-primary fw-bold">Manajemen Akun Pengguna</h2>
+        {{-- ROUTE YANG BENAR: users.create --}}
         <a href="{{ route('users.create') }}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Tambah User Baru
         </a>
@@ -16,6 +17,7 @@
         <div class="alert alert-danger alert-dismissible fade show">{{ session('error') }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     @endif
 
+    {{-- TABEL 1: PETINGGI --}}
     <div class="card shadow border-0 mb-4">
         <div class="card-header bg-dark text-white fw-bold">
             <i class="fas fa-user-tie me-2"></i> Daftar Manajemen & Staff
@@ -44,8 +46,11 @@
                         </td>
                         <td>{{ $p->no_hp ?? '-' }}</td>
                         <td class="text-center">
+                            {{-- PERBAIKAN: Gunakan users.edit --}}
                             <a href="{{ route('users.edit', $p->id) }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+                            
                             @if(auth()->id() != $p->id)
+                                {{-- PERBAIKAN: Gunakan users.destroy --}}
                                 <form action="{{ route('users.destroy', $p->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus user ini?')">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -59,6 +64,7 @@
         </div>
     </div>
 
+    {{-- TABEL 2: GURU --}}
     <div class="card shadow border-0">
         <div class="card-header bg-white fw-bold text-primary border-bottom">
             <i class="fas fa-chalkboard-teacher me-2"></i> Daftar Guru Pengajar
@@ -86,7 +92,10 @@
                                 @else <span class="badge bg-secondary">Non-Aktif</span> @endif
                             </td>
                             <td class="text-center">
+                                {{-- PERBAIKAN: Gunakan users.edit --}}
                                 <a href="{{ route('users.edit', $g->id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                
+                                {{-- PERBAIKAN: Gunakan users.destroy --}}
                                 <form action="{{ route('users.destroy', $g->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus guru ini?')">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>

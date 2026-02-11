@@ -23,7 +23,6 @@ class User extends Authenticatable
         'name',
         'password',
         'role',
-        // Tambahan baru:
         'no_hp',
         'foto_profil',
         'is_active',

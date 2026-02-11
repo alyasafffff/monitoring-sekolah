@@ -7,7 +7,9 @@
             <div class="card shadow border-0">
                 <div class="card-header bg-white fw-bold">Tambah User Baru</div>
                 <div class="card-body">
-                    <form action="{{ route('users.store') }}" method="POST">
+                    {{--  --}}
+                    {{-- IMPORTANT: Added enctype="multipart/form-data" to allow file uploads --}}
+                    <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         
                         <div class="row mb-3">
@@ -18,8 +20,7 @@
                                     <option value="guru">Guru Pengajar</option>
                                     <option value="bk">Guru BK</option>
                                     
-                                    {{-- INI LOGIKANYA: --}}
-                                    {{-- Jika $sudahAdaKepsek bernilai FALSE (Belum ada), maka tampilkan opsinya --}}
+                                    {{-- Logic to show/hide Principal option --}}
                                     @if(!$sudahAdaKepsek) 
                                         <option value="kepsek">Kepala Sekolah</option>
                                     @endif
@@ -27,7 +28,6 @@
                                     <option value="admin">Administrator</option>
                                 </select>
 
-                                {{-- Pesan info kecil (Opsional) --}}
                                 @if($sudahAdaKepsek)
                                     <small class="text-danger fst-italic mt-1 d-block" style="font-size: 11px;">
                                         *Opsi Kepala Sekolah disembunyikan karena akun Kepsek sudah ada.
@@ -35,7 +35,6 @@
                                 @endif
                             </div>
                             
-                            {{-- ... (Sisa inputan lain sama seperti sebelumnya) ... --}}
                             <div class="col-md-6">
                                 <label class="form-label">NIP / Username Login</label>
                                 <input type="text" name="nip" class="form-control" required>
@@ -56,6 +55,12 @@
                                 <label class="form-label">Password</label>
                                 <input type="password" name="password" class="form-control" placeholder="Minimal 6 karakter" required>
                             </div>
+                        </div>
+
+                        {{-- NEW: Profile Picture Input --}}
+                        <div class="mb-3">
+                            <label class="form-label">Foto Profil <small class="text-muted">(Opsional, Max 2MB)</small></label>
+                            <input type="file" name="foto_profil" class="form-control" accept="image/*">
                         </div>
 
                         <div class="d-flex justify-content-end">

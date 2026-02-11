@@ -6,55 +6,61 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage; // <--- WAJIB TAMBAH INI
 
 class UserWebController extends Controller
 {
-    // 1. HALAMAN UTAMA (Sesuai Request: Atas Petinggi, Bawah Guru)
+    // 1. HALAMAN UTAMA
     public function index()
     {
-        // Grup 1: Petinggi (Admin, Kepsek, BK)
         $petinggi = DB::table('users')
             ->whereIn('role', ['admin', 'kepsek', 'bk'])
             ->orderBy('role', 'asc')
             ->get();
 
-        // Grup 2: Guru
         $guru = DB::table('users')
             ->where('role', 'guru')
             ->orderBy('name', 'asc')
             ->get();
 
+        // [CORRECTED] Mengarah ke folder 'user' (tunggal)
         return view('dashboard.user.index', compact('petinggi', 'guru'));
     }
 
-    // 2. FORM TAMBAH USER (Bisa pilih Role)
-// 2. FORM TAMBAH USER
+    // 2. FORM TAMBAH USER
     public function create()
     {
-        // Cek di database: Apakah sudah ada user dengan role 'kepsek'?
-        // Outputnya TRUE jika sudah ada, FALSE jika belum ada
         $sudahAdaKepsek = DB::table('users')->where('role', 'kepsek')->exists();
-
-        // Kirim variabel $sudahAdaKepsek ke View
+        // [CORRECTED] Mengarah ke folder 'user'
         return view('dashboard.user.create', compact('sudahAdaKepsek'));
     }
 
-    // 3. PROSES SIMPAN
+    // 3. PROSES SIMPAN (+ LOGIKA UPLOAD FOTO)
     public function store(Request $request)
     {
         $request->validate([
             'nip' => 'required|unique:users,nip',
             'name' => 'required|string',
-            'role' => 'required|in:admin,bk,kepsek,guru', // Pilihan Role
+            'role' => 'required|in:admin,bk,kepsek,guru',
             'password' => 'required|min:6',
+            'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Validasi Foto
         ]);
 
+        // A. Proses Upload Foto (Jika ada)
+        $pathFoto = null;
+        if ($request->hasFile('foto_profil')) {
+            // Simpan ke folder: storage/app/public/profile_photos
+            $pathFoto = $request->file('foto_profil')->store('profile_photos', 'public');
+        }
+
+        // B. Simpan ke Database
         DB::table('users')->insert([
             'nip' => $request->nip,
             'name' => $request->name,
             'role' => $request->role,
             'password' => Hash::make($request->password),
             'no_hp' => $request->no_hp,
+            'foto_profil' => $pathFoto, // <--- Simpan Path di sini
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -67,18 +73,21 @@ class UserWebController extends Controller
     public function edit($id)
     {
         $user = DB::table('users')->where('id', $id)->first();
+        // [CORRECTED] Mengarah ke folder 'user'
         return view('dashboard.user.edit', compact('user'));
     }
 
-    // 5. PROSES UPDATE
+    // 5. PROSES UPDATE (+ LOGIKA GANTI FOTO)
     public function update(Request $request, $id)
     {
         $request->validate([
             'nip' => 'required|unique:users,nip,' . $id,
             'name' => 'required|string',
             'role' => 'required|in:admin,bk,kepsek,guru',
+            'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        // Data dasar
         $data = [
             'nip' => $request->nip,
             'name' => $request->name,
@@ -88,8 +97,22 @@ class UserWebController extends Controller
             'updated_at' => now(),
         ];
 
+        // Jika password diisi, update password
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
+        }
+
+        // LOGIKA GANTI FOTO
+        if ($request->hasFile('foto_profil')) {
+            // 1. Hapus foto lama biar server gak penuh
+            $userLama = DB::table('users')->where('id', $id)->first();
+            if ($userLama->foto_profil && Storage::disk('public')->exists($userLama->foto_profil)) {
+                Storage::disk('public')->delete($userLama->foto_profil);
+            }
+
+            // 2. Upload foto baru
+            $pathFoto = $request->file('foto_profil')->store('profile_photos', 'public');
+            $data['foto_profil'] = $pathFoto;
         }
 
         DB::table('users')->where('id', $id)->update($data);
@@ -97,22 +120,30 @@ class UserWebController extends Controller
         return redirect()->route('users.index')->with('success', 'Data User Berhasil Diupdate!');
     }
 
-    // 6. HAPUS USER (Dengan Validasi Keamanan)
+    // 6. HAPUS USER (+ HAPUS FILE FOTO)
     public function destroy($id)
     {
-        // PERBAIKAN DISINI: Gunakan Auth::id()
-        // Ini artinya: "Ambil ID milik user yang sedang login sekarang"
         if (Auth::id() == $id) {
             return back()->with('error', 'Anda tidak bisa menghapus akun sendiri!');
         }
 
-        // Cek jika Guru, apakah dia Wali Kelas?
+        // Cek Wali Kelas
         $cekWali = DB::table('kelas')->where('wali_kelas_id', $id)->exists();
         if ($cekWali) {
             return back()->with('error', 'Gagal! User ini terdaftar sebagai Wali Kelas.');
         }
 
+        // Ambil data user untuk cek foto
+        $user = DB::table('users')->where('id', $id)->first();
+
+        // Hapus file foto dari folder storage
+        if ($user->foto_profil && Storage::disk('public')->exists($user->foto_profil)) {
+            Storage::disk('public')->delete($user->foto_profil);
+        }
+
+        // Hapus data DB
         DB::table('users')->where('id', $id)->delete();
+
         return redirect()->route('users.index')->with('success', 'User Berhasil Dihapus!');
     }
 }
