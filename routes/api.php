@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mulai-kelas', [JadwalController::class, 'mulaiKelas']); // <--- Tambah ini
     Route::get('/walikelas/siswa', [IzinController::class, 'getSiswa']);
     Route::post('/walikelas/izin', [IzinController::class, 'inputIzin']);
+    Route::get('/walikelas/riwayat-izin', [IzinController::class, 'getRiwayatIzin']);
     Route::get('/jurnal/{jurnal_id}/presensi', [JurnalController::class, 'getPresensiSiswa']);
     Route::post('/jurnal/{jurnal_id}/update', [JurnalController::class, 'updateJurnal']);
     Route::get('/jurnal/{jurnal_id}/presensi', [JurnalController::class, 'getPresensiSiswa']);

@@ -11,21 +11,36 @@ use Illuminate\Support\Facades\Storage; // <--- WAJIB TAMBAH INI
 class UserWebController extends Controller
 {
     // 1. HALAMAN UTAMA
-    public function index()
-    {
-        $petinggi = DB::table('users')
-            ->whereIn('role', ['admin', 'kepsek', 'bk'])
-            ->orderBy('role', 'asc')
-            ->get();
+    public function index(Request $request)
+{
+    $search = $request->query('q');
 
-        $guru = DB::table('users')
-            ->where('role', 'guru')
-            ->orderBy('name', 'asc')
-            ->get();
+    // 1. Query untuk Petinggi (Admin, Kepsek, BK)
+    $petinggiQuery = DB::table('users')
+        ->whereIn('role', ['admin', 'kepsek', 'bk']);
 
-        // [CORRECTED] Mengarah ke folder 'user' (tunggal)
-        return view('dashboard.user.index', compact('petinggi', 'guru'));
+    // 2. Query untuk Guru
+    $guruQuery = DB::table('users')
+        ->where('role', 'guru');
+
+    // Jika ada pencarian, tambahkan kondisi WHERE pada kedua query
+    if ($request->filled('q')) {
+        $petinggiQuery->where(function($query) use ($search) {
+            $query->where('name', 'like', "%$search%")
+                  ->orWhere('nip', 'like', "%$search%");
+        });
+
+        $guruQuery->where(function($query) use ($search) {
+            $query->where('name', 'like', "%$search%")
+                  ->orWhere('nip', 'like', "%$search%");
+        });
     }
+
+    $petinggi = $petinggiQuery->orderBy('role', 'asc')->get();
+    $guru = $guruQuery->orderBy('name', 'asc')->get();
+
+    return view('dashboard.user.index', compact('petinggi', 'guru'));
+}
 
     // 2. FORM TAMBAH USER
     public function create()

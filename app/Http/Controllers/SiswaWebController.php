@@ -9,17 +9,39 @@ use Illuminate\Support\Str;
 class SiswaWebController extends Controller
 {
     // 1. TAMPILKAN DATA (READ)
-    public function index()
-    {
-        $siswa = DB::table('siswa')
-            ->join('kelas', 'siswa.kelas_id', '=', 'kelas.id')
-            ->select('siswa.*', 'kelas.nama_kelas')
-            ->orderBy('kelas.nama_kelas', 'asc')
-            ->orderBy('siswa.nama_siswa', 'asc')
-            ->get();
+    public function index(Request $request)
+{
+    // Ambil semua data kelas untuk dropdown filter
+    $list_kelas = DB::table('kelas')->orderBy('nama_kelas', 'asc')->get();
 
-        return view('dashboard.siswa.index', compact('siswa'));
+    // Mulai Query Dasar
+    $query = DB::table('siswa')
+        ->join('kelas', 'siswa.kelas_id', '=', 'kelas.id')
+        ->select('siswa.*', 'kelas.nama_kelas');
+
+    // 1. FILTER KELAS (Jika dipilih)
+    if ($request->filled('filter_kelas')) {
+        $query->where('siswa.kelas_id', $request->filter_kelas);
     }
+
+    // 2. FILTER PENCARIAN (Nama atau NISN)
+    if ($request->filled('q')) {
+        $search = $request->q;
+        $query->where(function($q) use ($search) {
+            $q->where('siswa.nama_siswa', 'like', "%$search%")
+              ->orWhere('siswa.nisn', 'like', "%$search%");
+        });
+    }
+
+    // 3. EKSEKUSI PAGINASI
+    // Gunakan withQueryString() agar otomatis membawa semua parameter di URL (filter_kelas & q)
+    $siswa = $query->orderBy('kelas.nama_kelas', 'asc')
+        ->orderBy('siswa.nama_siswa', 'asc')
+        ->paginate(30)
+        ->withQueryString(); 
+
+    return view('dashboard.siswa.index', compact('siswa', 'list_kelas'));
+}
 
     // 2. FORM TAMBAH (CREATE)
     public function create()

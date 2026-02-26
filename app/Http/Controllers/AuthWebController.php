@@ -13,25 +13,35 @@ class AuthWebController extends Controller
     }
 
     public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'nip' => 'required',
-            'password' => 'required',
-        ]);
+{
+    $credentials = $request->validate([
+        'nip' => 'required',
+        'password' => 'required',
+    ]);
 
-        // Coba Login
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
+    // Tambahkan kondisi status aktif di sini
+    // Laravel akan otomatis mengecek is_active = 1 saat login
+    $credentialsWithStatus = array_merge($credentials, ['is_active' => 1]);
 
-            // Redirect ke Dashboard
-            return redirect()->intended('dashboard');
-        }
+    if (Auth::attempt($credentialsWithStatus)) {
+        $request->session()->regenerate();
 
+        return redirect()->intended('dashboard');
+    }
+
+    // Jika gagal, cek apakah NIP-nya ada tapi is_active-nya 0
+    $user = \App\Models\User::where('nip', $request->nip)->first();
+    
+    if ($user && !$user->is_active) {
         return back()->withErrors([
-            'nip' => 'NIP atau Password salah.',
+            'nip' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.',
         ]);
     }
 
+    return back()->withErrors([
+        'nip' => 'NIP atau Password salah.',
+    ]);
+}
     public function logout(Request $request)
     {
         Auth::logout();

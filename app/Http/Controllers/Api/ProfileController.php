@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -14,42 +15,36 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // Logika foto (tetap)
         $fotoUrl = null;
-        if ($user->foto_profil) { 
+        if ($user->foto_profil) {
             $fotoUrl = asset('storage/' . $user->foto_profil);
         }
 
-        // Statistik (tetap)
-        $totalSesi = DB::table('jurnals')
-            ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
-            ->where('jadwal_pelajaran.guru_id', $user->id)
+        // --- UPDATE DISINI: STATISTIK MINGGUAN ---
+
+        // 1. Hitung Total Sesi (Semua jam pelajaran guru dalam seminggu)
+        $totalSesi = DB::table('jadwal_pelajaran')
+            ->where('guru_id', $user->id)
             ->count();
 
-        $kelasDiajar = DB::table('jadwal_pelajaran')
+        // 2. Hitung Total Kelas (Berapa kelas unik yang ditangani minggu ini)
+        $totalKelas = DB::table('jadwal_pelajaran')
             ->where('guru_id', $user->id)
-            ->distinct()->pluck('kelas_id');
-            
-        $totalSiswa = DB::table('siswa')
-            ->whereIn('kelas_id', $kelasDiajar)
-            ->count();
+            ->distinct('kelas_id')
+            ->count('kelas_id');
 
         return response()->json([
             'success' => true,
             'data' => [
                 'nama' => $user->name,
                 'nip'  => $user->nip ?? '-',
-                'role' => 'Guru Mata Pelajaran',
+                'role' => 'Guru Pengajar',
                 'foto_url' => $fotoUrl,
-                
-                // --- TAMBAHAN PENTING ---
-                'no_hp' => $user->no_hp, // <-- Kirim data HP agar bisa diambil Android
-                // 'email' => $user->email, // (Uncomment jika di tabel users ada kolom email)
-                // 'alamat' => $user->alamat, // (Uncomment jika di tabel users ada kolom alamat)
-                
+                'no_hp' => $user->no_hp,
+
                 'stats' => [
                     'total_sesi' => $totalSesi,
-                    'total_siswa' => $totalSiswa
+                    'total_kelas' => $totalKelas // <-- Key berubah dari total_siswa ke total_kelas
                 ]
             ]
         ]);
@@ -80,7 +75,7 @@ class ProfileController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Foto berhasil diupdate',
-                'foto_url' => asset('storage/' . $path), 
+                'foto_url' => asset('storage/' . $path),
             ]);
         }
 
@@ -122,7 +117,7 @@ class ProfileController extends Controller
     {
         $request->validate([
             'current_password' => 'required',
-            'new_password' => 'required|min:8|regex:/[0-9]/|confirmed', 
+            'new_password' => 'required|min:8|regex:/[0-9]/|confirmed',
             // 'confirmed' artinya Laravel akan mencari field bernama 'new_password_confirmation'
         ]);
 
@@ -145,5 +140,4 @@ class ProfileController extends Controller
             'message' => 'Password berhasil diperbarui.'
         ]);
     }
-
-} 
+}

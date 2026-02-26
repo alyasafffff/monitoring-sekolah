@@ -17,9 +17,9 @@ class IzinSiswa extends Model
         'siswa_id',
         'wali_kelas_id',
         'tanggal_izin',
-        'status',       // Sakit, Izin, Dispensasi
-        'keterangan',   // <--- PENTING: Kolom baru
-        'jam_mulai',    // Nullable
-        'jam_selesai',  // Nullable
+        'status',
+        'keterangan',
+        'jam_ke_mulai',
+        'jam_ke_selesai'
     ];
 }

@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('izin_siswa', function (Blueprint $table) {
@@ -20,25 +17,18 @@ return new class extends Migration
             
             // Info Izin
             $table->date('tanggal_izin');
-            
-            // Status utama
             $table->enum('status', ['Sakit', 'Izin', 'Dispensasi']);
-            
-            // --- TAMBAHAN KOLOM KETERANGAN ---
-            // Kita pakai 'text' agar muat panjang, dan 'nullable' karena opsional
             $table->text('keterangan')->nullable(); 
             
-            // (Opsional) Jika fitur jam izin parsial mau diaktifkan nanti
-            $table->time('jam_mulai')->nullable();
-            $table->time('jam_selesai')->nullable();
+            // --- PERUBAHAN: Menggunakan Jam Ke (Sesi) ---
+            // Jika jam_ke_mulai NULL, sistem menganggap izin SEHARIAN (Full Day)
+            $table->integer('jam_ke_mulai')->nullable();
+            $table->integer('jam_ke_selesai')->nullable();
 
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('izin_siswa');

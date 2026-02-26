@@ -9,23 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('jadwal_pelajaran', function (Blueprint $table) {
-            $table->id();
-            
-            // Relasi (Wajib ada)
-            $table->foreignId('kelas_id')->constrained('kelas')->cascadeOnDelete();
-            $table->foreignId('mapel_id')->constrained('mata_pelajaran')->cascadeOnDelete();
-            $table->foreignId('guru_id')->constrained('users')->cascadeOnDelete();
-            
-            // Waktu
-            $table->enum('hari', ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']);
-            $table->time('jam_mulai');
-            $table->time('jam_selesai');
-            
-            // Kolom jurnal_materi & foto_kelas SUDAH DIHAPUS dari sini.
-            // Kita fokus jadwal dulu.
-            
-            $table->timestamps();
-        });
+    $table->id();
+    $table->foreignId('kelas_id')->constrained('kelas')->cascadeOnDelete();
+    $table->foreignId('mapel_id')->constrained('mata_pelajaran')->cascadeOnDelete();
+    $table->foreignId('guru_id')->constrained('users')->cascadeOnDelete();
+    $table->foreignId('jam_pelajaran_config_id')->constrained('jam_pelajaran_config')->cascadeOnDelete();
+    
+    $table->string('hari'); // <--- PASTIKAN BARIS INI ADA
+
+    $table->timestamps();
+    
+    // Nama index manual agar tidak "Too Long"
+    $table->unique(['kelas_id', 'jam_pelajaran_config_id', 'hari'], 'jadwal_unique');
+});
     }
 
     public function down(): void
