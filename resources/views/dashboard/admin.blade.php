@@ -70,7 +70,7 @@
             <div class="card shadow border-0">
                 <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
                     <h6 class="m-0 fw-bold text-primary"><i class="fas fa-envelope-open-text me-2"></i>Pengajuan Izin Terbaru</h6>
-                    <a href="#" class="btn btn-sm btn-primary">Lihat Semua</a>
+                    
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">

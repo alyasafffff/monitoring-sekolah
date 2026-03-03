@@ -163,7 +163,7 @@
                 <li class="{{ request()->is('users*') ? 'active' : '' }}">
                     <a href="{{ route('users.index') }}"><i class="fa-solid fa-user-shield"></i> Data User</a>
                 </li>
-                
+
                 <li class="{{ request()->is('mapel*') ? 'active' : '' }}">
                     <a href="{{ route('mapel.index') }}"><i class="fa-solid fa-book"></i> Mata Pelajaran</a>
                 </li>
@@ -173,11 +173,17 @@
                 <li class="{{ request()->is('jadwal*') ? 'active' : '' }}">
                     <a href="{{ route('jadwal.index') }}"><i class="fa-solid fa-calendar-day"></i> Jadwal Pelajaran</a>
                 </li>
+                <div class="nav-label">Transaksi & Laporan</div>
+                <li class="{{ request()->is('admin/rekap*') ? 'active' : '' }}">
+                    <a href="{{ route('rekap.index') }}">
+                        <i class="fa-solid fa-file-invoice"></i> Rekapitulasi Presensi
+                    </a>
+                </li>
                 @endif
 
                 @if(Auth::user()->role == 'bk')
                 <div class="nav-label">Monitoring</div>
-                <li><a href="#"><i class="fa-solid fa-triangle-exclamation"></i> Pelanggaran</a></li>
+                <li><a href="{{ route('bk.laporan.alpha') }}"><i class="fa-solid fa-triangle-exclamation"></i> Laporan Alpha</a></li>
                 @endif
             </ul>
 

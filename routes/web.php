@@ -9,6 +9,8 @@ use App\Http\Controllers\UserWebController;
 use App\Http\Controllers\MapelWebController;
 use App\Http\Controllers\JadwalWebController;
 use App\Http\Controllers\JamPelajaranConfigController;
+use App\Http\Controllers\RekapWebController;
+use App\Http\Controllers\LaporanBkController;
 
 // 1. HALAMAN LOGIN (Tamu)
 Route::middleware('guest')->group(function () {
@@ -42,16 +44,14 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserWebController::class);
         Route::resource('mapel', MapelWebController::class);
         Route::resource('jadwal', JadwalWebController::class);
-
         Route::resource('jam-config', JamPelajaranConfigController::class)->except(['create', 'show', 'edit', 'update']);
-        // Nanti tambah Mapel & Guru disini juga...
+        Route::get('/admin/rekap-presensi', [RekapWebController::class, 'index'])->name('rekap.index');
+        Route::get('/admin/rekap/export', [RekapWebController::class, 'export'])->name('rekap.export');
     });
 
     // --- GROUP KHUSUS BK ---
     Route::middleware('role:bk')->prefix('bk')->group(function () {
-        Route::get('/pelanggaran', function () {
-            return "Halaman Monitoring Pelanggaran";
-        });
+        Route::get('/bk/laporan-alpha', [LaporanBkController::class, 'index'])->name('bk.laporan.alpha');
     });
 });
 
