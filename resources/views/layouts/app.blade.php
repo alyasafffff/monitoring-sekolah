@@ -15,23 +15,23 @@
             --sidebar-bg: #0f172a;
             --sidebar-hover: #1e293b;
             --accent-color: #3b82f6;
+            /* Biru Terang */
             --bg-main: #f8fafc;
+            --text-muted: #94a3b8;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-main);
             height: 100vh;
-            /* Kunci tinggi body */
             overflow: hidden;
-            /* Matikan scroll body utama */
+            margin: 0;
         }
 
         /* Layout Structure */
         .wrapper {
             display: flex;
             height: 100vh;
-            /* Wrapper harus setinggi layar */
             width: 100vw;
         }
 
@@ -40,38 +40,50 @@
             min-width: 260px;
             max-width: 260px;
             background: var(--sidebar-bg);
-            color: #94a3b8;
+            color: var(--text-muted);
             display: flex;
             flex-direction: column;
-            /* Biar bisa bagi area menu & footer */
             height: 100vh;
             box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            transition: all 0.3s;
         }
 
         #sidebar .sidebar-header {
-            padding: 20px;
+            padding: 20px 25px;
             background: var(--sidebar-bg);
+            /* Tetap Gelap */
             border-bottom: 1px solid #1e293b;
-            flex-shrink: 0;
-            /* Header jangan ikutan mengecil */
+            display: flex;
+            align-items: center;
         }
 
-        /* AREA MENU: Dikasih Scroll Sendiri */
+        .logo-sidebar {
+            width: 45px;
+            height: 45px;
+            object-fit: contain;
+            /* Hanya 0.5px atau pakai blur minimal */
+            filter: drop-shadow(0 1px 1px white);
+        }
+
+        #sidebar .sidebar-header:hover .logo-sidebar {
+            transform: rotate(5deg) scale(1.1);
+            /* Sedikit efek interaktif */
+        }
+
+        /* AREA MENU */
         #sidebar ul.components {
             padding: 15px 0;
             flex-grow: 1;
             overflow-y: auto;
-            /* Munculkan scroll jika menu kepanjangan */
             scrollbar-width: none;
-            /* Sembunyikan scrollbar di Firefox */
+            /* Firefox */
         }
 
         #sidebar ul.components::-webkit-scrollbar {
             display: none;
+            /* Chrome/Safari */
         }
-
-        /* Sembunyikan scrollbar di Chrome/Safari */
 
         #sidebar .nav-label {
             font-size: 10px;
@@ -82,32 +94,75 @@
             letter-spacing: 1px;
         }
 
+        #sidebar ul li {
+            position: relative;
+            list-style: none;
+        }
+
         #sidebar ul li a {
             padding: 12px 25px;
-            display: block;
-            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 500;
+            transition: all 0.2s ease;
         }
 
-        #sidebar ul li.active>a {
+        #sidebar ul li a i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* HOVER STATE */
+        #sidebar ul li a:hover {
             background: var(--sidebar-hover);
-            border-right: 4px solid var(--accent-color);
-            color: var(--accent-color);
+            color: #fff;
         }
 
-        /* FOOTER SIDEBAR: Tetap Diam di Bawah */
+        #sidebar ul li.active,
+        #sidebar ul li:has(a.active) {
+            background: var(--sidebar-hover) !important;
+            position: relative;
+        }
+
+        /* Garis Biru di Kanan */
+        #sidebar ul li.active::after,
+        #sidebar ul li:has(a.active)::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--accent-color);
+            box-shadow: -2px 0 10px rgba(59, 130, 246, 0.8);
+            z-index: 5;
+        }
+
+        /* Teks dan Icon Menyala Putih & Biru */
+        #sidebar ul li.active>a,
+        #sidebar ul li a.active {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+
+        #sidebar ul li.active>a i,
+        #sidebar ul li a.active i {
+            color: var(--accent-color) !important;
+        }
+
+        /* FOOTER SIDEBAR */
         .sidebar-footer {
             padding: 15px;
             background: #151f33;
-            /* Warna agak beda biar tegas */
             border-top: 1px solid #1e293b;
             flex-shrink: 0;
-            /* Footer jangan ikutan mengecil */
         }
 
-        /* AREA KONTEN: Dikasih Scroll Sendiri */
+        /* CONTENT AREA */
         #content {
             flex-grow: 1;
             height: 100vh;
@@ -131,9 +186,27 @@
         .main-container {
             padding: 30px;
             overflow-y: auto;
-            /* Konten utama bisa di-scroll */
             flex-grow: 1;
             background: var(--bg-main);
+        }
+
+        /* Badge Styling in Sidebar Footer */
+        .badge {
+            letter-spacing: 0.5px;
+        }
+
+        .profile-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .profile-link {
+            transition: all 0.2s ease;
+        }
+
+        /* Biar teks nama nggak kegeser kalau link diklik */
+        .sidebar-footer a {
+            color: inherit;
         }
     </style>
 </head>
@@ -143,11 +216,18 @@
     <div class="wrapper">
         <nav id="sidebar">
             <div class="sidebar-header">
-                <i class="fa-solid fa-school text-primary fs-3 me-3"></i>
-                <span class="fw-bold text-white fs-5 tracking-wide">SiMon</span>
+                {{-- Logo dengan efek garis tepi (outline) lewat CSS --}}
+                <img src="{{ asset('logo.png') }}" alt="Logo SIMONS" class="logo-sidebar me-3">
+
+                {{-- Teks Brand --}}
+                <div class="d-flex flex-column">
+                    <span class="fw-bold text-white fs-5" style="line-height: 1.1; letter-spacing: 1px;">SIMONS</span>
+                    <small style="font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #3b82f6; font-weight: 700;">Sistem Monitoring Sekolah</small>
+                </div>
             </div>
 
             <ul class="list-unstyled components">
+                {{-- Dashboard - Universal --}}
                 <li class="{{ request()->is('dashboard*') ? 'active' : '' }}">
                     <a href="{{ route('dashboard') }}"><i class="fa-solid fa-house"></i> Dashboard</a>
                 </li>
@@ -163,7 +243,6 @@
                 <li class="{{ request()->is('users*') ? 'active' : '' }}">
                     <a href="{{ route('users.index') }}"><i class="fa-solid fa-user-shield"></i> Data User</a>
                 </li>
-
                 <li class="{{ request()->is('mapel*') ? 'active' : '' }}">
                     <a href="{{ route('mapel.index') }}"><i class="fa-solid fa-book"></i> Mata Pelajaran</a>
                 </li>
@@ -173,6 +252,7 @@
                 <li class="{{ request()->is('jadwal*') ? 'active' : '' }}">
                     <a href="{{ route('jadwal.index') }}"><i class="fa-solid fa-calendar-day"></i> Jadwal Pelajaran</a>
                 </li>
+
                 <div class="nav-label">Transaksi & Laporan</div>
                 <li class="{{ request()->is('admin/rekap*') ? 'active' : '' }}">
                     <a href="{{ route('rekap.index') }}">
@@ -182,43 +262,74 @@
                 @endif
 
                 @if(Auth::user()->role == 'bk')
-                <div class="nav-label">Monitoring</div>
-                <li><a href="{{ route('bk.laporan.alpha') }}"><i class="fa-solid fa-triangle-exclamation"></i> Laporan Alpha</a></li>
+                <div class="nav-label">Monitoring & Pembinaan</div>
+                <li class="{{ Request::is('bk/laporan*') ? 'active' : '' }}">
+                    <a href="{{ route('bk.laporan.alpha') }}">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Laporan Alpha
+                    </a>
+                </li>
+                <li class="{{ Request::is('bk/siswa*') ? 'active' : '' }}">
+                    <a href="{{ route('bk.siswa.index') }}">
+                        <i class="fa-solid fa-users"></i> Profil Siswa
+                    </a>
+                </li>
+                @endif
+                @if(Auth::user()->role == 'kepsek')
+                <div class="nav-label">Laporan Eksekutif</div>
+                <li class="{{ request()->is('kepsek/monitoring-jurnal*') ? 'active' : '' }}">
+                    <a href="{{ route('kepsek.monitoring.jurnal') }}">
+                        <i class="fa-solid fa-book-open-reader"></i> Keselarasan Materi
+                    </a>
+                </li>
+                <li class="{{ request()->is('kepsek/monitoring-presensi*') ? 'active' : '' }}">
+                    <a href="{{ route('kepsek.monitoring.presensi') }}">
+                        <i class="fa-solid fa-chart-line"></i> Analisis Presensi
+                    </a>
+                </li>
                 @endif
             </ul>
 
             <div class="sidebar-footer">
-                <div class="d-flex align-items-center">
-                    {{-- Foto Profil Dinamis --}}
-                    <img src="{{ asset('storage/' . Auth::user()->foto_profil) }}"
-                        class="rounded-circle me-3 border border-secondary shadow-sm"
-                        width="40"
-                        height="40"
-                        style="object-fit: cover;"
-                        onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=3b82f6&color=fff';">
+                {{-- Kita bungkus dengan link ke profile.edit --}}
+                <a href="{{ route('profile.edit') }}" class="text-decoration-none d-block">
+                    <div class="d-flex align-items-center profile-link p-2 rounded transition-all">
 
-                    <div class="overflow-hidden">
-                        {{-- Nama User --}}
-                        <p class="text-white mb-0 small fw-bold text-truncate" title="{{ Auth::user()->name }}">
-                            {{ Auth::user()->name }}
-                        </p>
+                        {{-- Foto Profil --}}
+                        <img src="{{ asset('storage/' . Auth::user()->foto_profil) }}"
+                            class="rounded-circle me-3 border border-secondary shadow-sm"
+                            width="40"
+                            height="40"
+                            style="object-fit: cover;"
+                            onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=3b82f6&color=fff';">
 
-                        {{-- Role dengan Visual Bagus --}}
-                        @php
-                        $roleLabels = [
-                        'admin' => ['label' => 'Administrator', 'color' => 'bg-primary'],
-                        'bk' => ['label' => 'Guru BK', 'color' => 'bg-danger'],
-                        'guru' => ['label' => 'Tenaga Pengajar', 'color' => 'bg-success'],
-                        'kepsek' => ['label' => 'Kepala Sekolah', 'color' => 'bg-info text-dark'],
-                        ];
-                        $currentRole = $roleLabels[Auth::user()->role] ?? ['label' => Auth::user()->role, 'color' => 'bg-secondary'];
-                        @endphp
+                        <div class="overflow-hidden">
+                            {{-- Nama User --}}
+                            <p class="text-white mb-0 small fw-bold text-truncate" title="{{ Auth::user()->name }}">
+                                {{ Auth::user()->name }}
+                            </p>
 
-                        <span class="badge {{ $currentRole['color'] }} p-1 mt-1" style="font-size: 9px; letter-spacing: 0.5px; font-weight: 800; text-transform: uppercase;">
-                            {{ $currentRole['label'] }}
-                        </span>
+                            {{-- Role --}}
+                            @php
+                            $roleLabels = [
+                            'admin' => ['label' => 'Administrator', 'color' => 'bg-primary'],
+                            'bk' => ['label' => 'Guru BK', 'color' => 'bg-danger'],
+                            'guru' => ['label' => 'Tenaga Pengajar', 'color' => 'bg-success'],
+                            'kepsek' => ['label' => 'Kepala Sekolah', 'color' => 'bg-info text-dark'],
+                            ];
+                            $currentRole = $roleLabels[Auth::user()->role] ?? ['label' => Auth::user()->role, 'color' => 'bg-secondary'];
+                            @endphp
+
+                            <span class="badge {{ $currentRole['color'] }} p-1 mt-1" style="font-size: 9px; letter-spacing: 0.5px; font-weight: 800; text-transform: uppercase;">
+                                {{ $currentRole['label'] }}
+                            </span>
+                        </div>
+
+                        {{-- Icon Indikator (Opsional biar user tau ini bisa diklik) --}}
+                        <div class="ms-auto text-muted small opacity-50">
+                            <i class="fa-solid fa-chevron-right ms-2"></i>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
         </nav>
 

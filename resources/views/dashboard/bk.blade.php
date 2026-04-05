@@ -6,11 +6,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-danger mb-0">Dashboard Monitoring BK</h2>
-            <p class="text-muted">Pantau kehadiran 15 kelas secara real-time, <strong>{{ $user->name }}</strong></p>
+            <p class="text-muted">Pantau kehadiran kelas secara real-time, <strong>{{ $user->name }}</strong></p>
         </div>
         <div class="text-end">
             <span class="badge bg-light text-dark border p-2">
-                <i class="fas fa-calendar-alt me-1 text-danger"></i> 
+                <i class="fas fa-calendar-alt me-1 text-danger"></i>
                 {{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
             </span>
         </div>
@@ -23,7 +23,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Siswa Bolos (Alpha) Hari Ini</div>
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Siswa Alpha Hari Ini</div>
                             <div class="h2 mb-0 fw-bold text-gray-800">{{ $totalBolosHariIni }}</div>
                         </div>
                         <div class="col-auto">
@@ -55,11 +55,12 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Monitoring Input Guru</div>
-                            <div class="h2 mb-0 fw-bold text-gray-800">{{ $kelasSudahPresensi }} <small class="fs-6 text-muted">/ 15 Kelas</small></div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Siswa Butuh Perhatian</div>
+                            <div class="h2 mb-0 fw-bold text-gray-800">{{ $siswaButuhPerhatian }} <small class="fs-6 text-muted">Orang</small></div>
+                            <p class="mb-0 mt-2 small text-muted font-italic">*Alpha ≥ 3x bulan ini</p>
                         </div>
                         <div class="col-auto">
-                            <i class="fas fa-clipboard-check fa-2x text-gray-300 opacity-25"></i>
+                            <i class="fas fa-exclamation-circle fa-2x text-gray-300 opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -143,7 +144,7 @@
                     </div>
                     <hr>
                     <div class="d-grid mt-3">
-                        <a href="#" class="btn btn-outline-danger btn-sm">
+                        <a href="{{ route('bk.laporan.alpha') }}" class="btn btn-outline-danger btn-sm">
                             <i class="fas fa-print me-1"></i> Cetak Rekap Pelanggaran
                         </a>
                     </div>

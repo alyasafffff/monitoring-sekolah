@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthWebController;
 use App\Http\Controllers\DashboardController;
@@ -9,8 +10,10 @@ use App\Http\Controllers\UserWebController;
 use App\Http\Controllers\MapelWebController;
 use App\Http\Controllers\JadwalWebController;
 use App\Http\Controllers\JamPelajaranConfigController;
+use App\Http\Controllers\KepsekController;
 use App\Http\Controllers\RekapWebController;
 use App\Http\Controllers\LaporanBkController;
+use App\Http\Controllers\SiswaBkController;
 
 // 1. HALAMAN LOGIN (Tamu)
 Route::middleware('guest')->group(function () {
@@ -25,6 +28,8 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard Utama (Multi Role)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::post('/profile/update-all', [ProfileController::class, 'updateAll'])->name('profile.update.all');
 
     // --- GROUP KHUSUS ADMIN ---
     // Semua yang ada di dalam sini otomatis punya awalan '/admin'
@@ -52,7 +57,15 @@ Route::middleware('auth')->group(function () {
     // --- GROUP KHUSUS BK ---
     Route::middleware('role:bk')->prefix('bk')->group(function () {
         Route::get('/bk/laporan-alpha', [LaporanBkController::class, 'index'])->name('bk.laporan.alpha');
+        Route::get('/bk/siswa', [App\Http\Controllers\SiswaBkController::class, 'index'])->name('bk.siswa.index');
+        Route::get('/bk/siswa/{id}', [App\Http\Controllers\SiswaBkController::class, 'show'])->name('bk.siswa.show');
+        Route::get('/bk/laporan/export', [SiswaBkController::class, 'export'])->name('bk.laporan.export');
     });
+
+    Route::middleware(['auth', 'role:kepsek'])->prefix('kepsek')->name('kepsek.')->group(function () {
+    Route::get('/monitoring-jurnal', [KepsekController::class, 'monitoringJurnal'])->name('monitoring.jurnal');
+    Route::get('/monitoring-presensi', [KepsekController::class, 'monitoringPresensi'])->name('monitoring.presensi');
+});
 });
 
 // JANGAN MENULIS RUTE APAPUN DI BAWAH SINI!

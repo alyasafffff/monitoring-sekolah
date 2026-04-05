@@ -13,8 +13,8 @@ class LaporanBkController extends Controller
     {
         $daftarKelas = DB::table('kelas')->get();
         $selectedKelas = $request->get('kelas_id');
-        $tglMulai = $request->get('tgl_mulai', date('Y-m-01')); 
-        $tglSelesai = $request->get('tgl_selesai', date('Y-m-d')); 
+        $tglMulai = $request->get('tgl_mulai', date('Y-m-01'));
+        $tglSelesai = $request->get('tgl_selesai', date('Y-m-d'));
 
         $query = DB::table('presensi_detail')
             ->join('jurnals', 'presensi_detail.jurnal_id', '=', 'jurnals.id')
@@ -41,20 +41,22 @@ class LaporanBkController extends Controller
             'mata_pelajaran.nama_mapel',
             'jurnals.tanggal',
             'users.name as nama_guru',
+            // Tetap gunakan MIN/MAX untuk ambil rentang waktu terluar
             DB::raw('MIN(jam_pelajaran_config.jam_mulai) as jam_mulai_gabung'),
             DB::raw('MAX(jam_pelajaran_config.jam_selesai) as jam_selesai_gabung')
         )
-        ->groupBy(
-            'siswa.id', 
-            'siswa.nama_siswa', 
-            'kelas.nama_kelas', 
-            'mata_pelajaran.nama_mapel', 
-            'jurnals.tanggal', 
-            'users.name'
-        )
-        ->orderBy('jurnals.tanggal', 'desc')
-        ->get();
-
+            ->groupBy(
+                'jurnals.tanggal', // Kunci 1: Tanggal sama
+                'siswa.id',       // Kunci 2: Siswa sama
+                'mata_pelajaran.id', // Kunci 3: Mapel sama
+                'kelas.nama_kelas',
+                'siswa.nama_siswa',
+                'mata_pelajaran.nama_mapel',
+                'users.name'
+            )
+            ->orderBy('jurnals.tanggal', 'desc')
+            ->orderBy('siswa.nama_siswa', 'asc') // Tambahan biar urut nama
+            ->get();
         return view('dashboard.bk.laporan_alpha', compact('dataAlpha', 'daftarKelas', 'selectedKelas', 'tglMulai', 'tglSelesai'));
     }
 }
