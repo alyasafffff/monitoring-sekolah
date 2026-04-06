@@ -25,7 +25,6 @@ class JamPelajaranConfigController extends Controller
             'jam_selesai' => 'required|after:jam_mulai',
             'tipe'        => 'required|in:mapel,istirahat,kegiatan',
             'keterangan'  => 'nullable|string|max:100',
-            'is_active'   => 'boolean'
         ]);
 
         // Cek duplikasi: tidak boleh ada jam_ke yang sama di grup yang sama
@@ -44,8 +43,7 @@ class JamPelajaranConfigController extends Controller
             'jam_mulai'   => $request->jam_mulai,
             'jam_selesai' => $request->jam_selesai,
             'tipe'        => $request->tipe,
-            'keterangan'  => $request->keterangan,
-            'is_active'   => $request->has('is_active') ? $request->is_active : true,
+            'keterangan'  => $request->keterangan
         ]);
 
         return redirect()->back()->with('success', 'Konfigurasi waktu berhasil disimpan!');

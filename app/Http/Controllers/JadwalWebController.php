@@ -24,7 +24,6 @@ class JadwalWebController extends Controller
 
             // 1. Ambil Konfigurasi Jam yang Aktif
             $dbConfig = DB::table('jam_pelajaran_config')
-                ->where('is_active', true)
                 ->orderBy('jam_ke')
                 ->get();
 

@@ -92,7 +92,6 @@
                                     <th>Jam Ke</th>
                                     <th>Waktu</th>
                                     <th>Keterangan</th>
-                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -116,12 +115,7 @@
                                     <td class="fw-bold">#{{ $c->jam_ke }}</td>
                                     <td>{{ \Carbon\Carbon::parse($c->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($c->jam_selesai)->format('H:i') }}</td>
                                     <td><small class="text-secondary">{{ $c->keterangan ?? '-' }}</small></td>
-                                    <td>
-                                        <div class="form-check form-switch d-flex justify-content-center">
-                                            <input class="form-check-input" type="checkbox" role="switch" {{ $c->is_active ? 'checked' : '' }} disabled>
-                                        </div>
-                                    </td>
-                                    <td>
+                                                                        <td>
                                         <form action="{{ route('jam-config.destroy', $c->id) }}" method="POST" onsubmit="return confirm('Hapus slot ini?')">
                                             @csrf @method('DELETE')
                                             <button class="btn btn-sm text-danger border-0">
