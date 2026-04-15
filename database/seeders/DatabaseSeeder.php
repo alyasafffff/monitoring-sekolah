@@ -27,11 +27,12 @@ class DatabaseSeeder extends Seeder
         ];
         DB::table('users')->upsert($users, ['nip'], ['name', 'role', 'password']);
 
-        
+
         // =========================
         // 2. KELAS
         // =========================
         $guruBudiId = DB::table('users')->where('nip', '22222')->value('id');
+        $guruSitiId = DB::table('users')->where('nip', '33333')->value('id'); // ID untuk Siti Aminah
 
         $tingkat = ['7', '8', '9'];
         $paralel = ['A', 'B', 'C', 'D', 'E'];
@@ -41,17 +42,21 @@ class DatabaseSeeder extends Seeder
             foreach ($paralel as $p) {
                 $namaKelas = $t . $p;
 
+                // Tentukan Wali Kelas secara spesifik
+                $walasId = null;
+                if ($namaKelas === '7A') $walasId = $guruBudiId;
+                if ($namaKelas === '7B') $walasId = $guruSitiId;
+
                 $id = DB::table('kelas')->insertGetId([
-                    'nama_kelas' => $namaKelas,
-                    'wali_kelas_id' => ($namaKelas === '7A') ? $guruBudiId : null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'nama_kelas'    => $namaKelas,
+                    'wali_kelas_id' => $walasId,
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
                 ]);
 
                 $kelasData[] = ['id' => $id, 'nama' => $namaKelas];
             }
         }
-
         // =========================
         // 3. SISWA
         // =========================
@@ -90,7 +95,8 @@ class DatabaseSeeder extends Seeder
         // 4. MAPEL & JADWAL
         // =========================
         $this->call([
-            MapelSeeder::class,
+            MapelSeeder::class,    // Mengisi config jam & daftar mapel
+            KegiatanSeeder::class, // Mengisi daftar kegiatan (BARU)
             JadwalSeeder::class,
         ]);
     }

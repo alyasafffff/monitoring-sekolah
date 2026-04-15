@@ -246,6 +246,9 @@
                 <li class="{{ request()->is('mapel*') ? 'active' : '' }}">
                     <a href="{{ route('mapel.index') }}"><i class="fa-solid fa-book"></i> Mata Pelajaran</a>
                 </li>
+                <li class="{{ request()->is('kegiatan*') ? 'active' : '' }}">
+                    <a href="{{ route('kegiatan.index') }}"><i class="fa-solid fa-calendar-check"></i> Kegiatan Sekolah</a>
+                </li>
                 <li class="{{ request()->is('jam-config*') ? 'active' : '' }}">
                     <a href="{{ route('jam-config.index') }}"><i class="fa-solid fa-clock"></i> Pengaturan Jam</a>
                 </li>

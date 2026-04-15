@@ -33,15 +33,17 @@ class RekapWebController extends Controller
     }
 
     // FUNGSI INI UNTUK MENGAMBIL DATA AGAR TIDAK DUPLIKAT
-private function getRekapData(Request $request)
+    private function getRekapData(Request $request)
     {
         // 1. Inisialisasi Parameter Filter
         $daftarKelas = DB::table('kelas')->get();
         $selectedKelas = $request->get('kelas_id');
         $tipe = $request->get('tipe', 'bulanan');
         $tahun = $request->get('tahun', date('Y'));
-        $selectedBulan = $request->get('bulan', date('m'));
-        $selectedTahun = $tahun;
+
+        // Kita ambil bulan awal dan akhir. Jika tidak ada, default ke bulan sekarang
+        $bulanAwal = $request->get('bulan_awal', date('m'));
+        $bulanAkhir = $request->get('bulan_akhir', date('m'));
         $semester = $request->get('semester', '1');
 
         $dataSiswa = [];
@@ -51,15 +53,29 @@ private function getRekapData(Request $request)
         if ($selectedKelas) {
             $infoKelas = DB::table('kelas')->where('id', $selectedKelas)->first();
 
-            // 2. Logika Penentuan Rentang Tanggal
+            // 2. Logika Penentuan Rentang Tanggal (REVISI DISINI)
             if ($tipe == 'bulanan') {
-                $start = Carbon::createFromDate($tahun, $selectedBulan, 1)->startOfMonth();
-                $end = $start->copy()->endOfMonth();
+                // Membuat tanggal mulai dari awal bulan_awal
+                $start = Carbon::createFromDate($tahun, $bulanAwal, 1)->startOfMonth();
+
+                // Membuat tanggal akhir dari akhir bulan_akhir
+                $end = Carbon::createFromDate($tahun, $bulanAkhir, 1)->endOfMonth();
+
+                // Keamanan: Jika admin pilih bulan_akhir lebih kecil dari bulan_awal, 
+                // kita samakan saja biar sistem tidak crash
+                if ($end->lt($start)) {
+                    $end = $start->copy()->endOfMonth();
+                }
+
+                // Looping untuk memasukkan semua tanggal dalam rentang tersebut
                 for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
-                    $listTanggal[] = $date->format('Y-m-d');
+                    // Sesuai kesepakatan awal: Hari Minggu di-skip (tidak ada KBM)
+                    if (!$date->isSunday()) {
+                        $listTanggal[] = $date->format('Y-m-d');
+                    }
                 }
             } else {
-                // Mode Semester
+                // Mode Semester (Tetap mengacu pada Jurnal yang sudah ada)
                 $startMonth = ($semester == '1') ? 7 : 1;
                 $endMonth = ($semester == '1') ? 12 : 6;
                 $start = Carbon::createFromDate($tahun, $startMonth, 1)->startOfMonth();
@@ -75,10 +91,10 @@ private function getRekapData(Request $request)
                     ->toArray();
             }
 
-            // 3. Ambil Data Dasar (Siswa)
+            // 3. Ambil Data Dasar (Siswa) - Tetap sama
             $siswa = DB::table('siswa')->where('kelas_id', $selectedKelas)->orderBy('nama_siswa')->get();
 
-            // 4. Ambil Data Transaksi (Presensi & Izin)
+            // 4. Ambil Data Transaksi (Presensi & Izin) - Tetap menggunakan $listTanggal yang baru
             $presensiRaw = DB::table('presensi_detail')
                 ->join('jurnals', 'presensi_detail.jurnal_id', '=', 'jurnals.id')
                 ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
@@ -92,24 +108,22 @@ private function getRekapData(Request $request)
                 ->select('siswa_id', 'tanggal_izin as tanggal', 'status')
                 ->get();
 
-            // 5. Mapping & Penentuan Prioritas Status Harian (Hierarki: S > I > H > A)
+            // --- Logika mapping tempLookup dan status harian (Hierarki S > I > H > A) ---
+            // (Sama seperti kodingan kamu sebelumnya, gunakan $listTanggal yang dinamis)
+
             $tempLookup = [];
-            
-            // Masukkan data presensi per mapel ke penampung sementara
             foreach ($presensiRaw as $p) {
                 $char = substr($p->status, 0, 1);
-                $finalStatus = ($char == 'D') ? 'I' : $char; // Dispensasi lebur ke Izin
+                $finalStatus = ($char == 'D') ? 'I' : $char;
                 $tempLookup[$p->siswa_id][$p->tanggal][] = $finalStatus;
             }
 
-            // Masukkan data izin harian ke penampung sementara
             foreach ($izinRaw as $i) {
                 $char = substr($i->status, 0, 1);
-                $finalStatus = ($char == 'D') ? 'I' : $char; // Dispensasi lebur ke Izin
+                $finalStatus = ($char == 'D') ? 'I' : $char;
                 $tempLookup[$i->siswa_id][$i->tanggal][] = $finalStatus;
             }
 
-            // Tentukan satu status final per hari
             $lookup = [];
             foreach ($tempLookup as $sId => $dates) {
                 foreach ($dates as $tgl => $statuses) {
@@ -118,16 +132,14 @@ private function getRekapData(Request $request)
                     } elseif (in_array('I', $statuses)) {
                         $lookup[$sId][$tgl] = 'I';
                     } elseif (in_array('H', $statuses)) {
-                        // Jika ada 1 saja mapel yang hadir, rekap harian dianggap Hadir (H)
                         $lookup[$sId][$tgl] = 'H';
                     } else {
-                        // Jika semua sesi/mapel statusnya Alpha (A)
                         $lookup[$sId][$tgl] = 'A';
                     }
                 }
             }
 
-            // 6. Mapping Akhir & Hitung Persentase untuk View/Excel
+            // 6. Mapping Akhir & Hitung Persentase
             $dataSiswa = $siswa->map(function ($s) use ($listTanggal, $lookup) {
                 $kehadiran = [];
                 $total = ['H' => 0, 'S' => 0, 'I' => 0, 'A' => 0];
@@ -141,7 +153,6 @@ private function getRekapData(Request $request)
                 }
 
                 $totalPertemuan = count($listTanggal);
-
                 $persen = [
                     'H' => $totalPertemuan > 0 ? round(($total['H'] / $totalPertemuan) * 100, 1) : 0,
                     'S' => $totalPertemuan > 0 ? round(($total['S'] / $totalPertemuan) * 100, 1) : 0,
@@ -159,14 +170,16 @@ private function getRekapData(Request $request)
             });
         }
 
+        // Return semua data ke View
         return [
             'dataSiswa' => $dataSiswa,
             'listTanggal' => $listTanggal,
             'daftarKelas' => $daftarKelas,
             'tipe' => $tipe,
             'selectedKelas' => $selectedKelas,
-            'selectedBulan' => $selectedBulan,
-            'selectedTahun' => $selectedTahun,
+            'bulanAwal' => $bulanAwal, // <--- Ini penting
+            'bulanAkhir' => $bulanAkhir, // <--- Ini penting
+            'selectedTahun' => $tahun,
             'infoKelas' => $infoKelas,
             'semester' => $semester
         ];

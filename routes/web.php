@@ -10,6 +10,7 @@ use App\Http\Controllers\UserWebController;
 use App\Http\Controllers\MapelWebController;
 use App\Http\Controllers\JadwalWebController;
 use App\Http\Controllers\JamPelajaranConfigController;
+use App\Http\Controllers\KegiatanWebController;
 use App\Http\Controllers\KepsekController;
 use App\Http\Controllers\RekapWebController;
 use App\Http\Controllers\LaporanBkController;
@@ -45,7 +46,9 @@ Route::middleware('auth')->group(function () {
         // B. Manajemen Kelas (SUDAH DIPINDAH KE DALAM SINI)
         // URL: /admin/kelas
         Route::resource('kelas', KelasWebController::class);
-
+        Route::resource('kegiatan', KegiatanWebController::class);
+        Route::get('/admin/jadwal/create', [JadwalWebController::class, 'create'])->name('jadwal.create');
+        Route::get('/admin/jadwal/export', [JadwalWebController::class, 'exportPdf'])->name('jadwal.export');
         Route::resource('users', UserWebController::class);
         Route::resource('mapel', MapelWebController::class);
         Route::resource('jadwal', JadwalWebController::class);

@@ -13,7 +13,7 @@
     <thead>
         <tr>
             <th colspan="{{ count($listTanggal) + 3 + $kolomTambahan }}" style="text-align: center; font-size: 14pt; font-weight: bold;">
-                REKAP PRESENSI SISWA {{ strtoupper($tipe) }} - {{ $infoKelas->nama_kelas ?? '' }}
+                REKAP PRESENSI SISWA  - {{ $infoKelas->nama_kelas ?? '' }}
             </th>
         </tr>
 

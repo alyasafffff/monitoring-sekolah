@@ -10,42 +10,53 @@
                 </div>
                 <div class="card-body">
                     <form action="{{ route('rekap.index') }}" method="GET" class="row g-3 mb-4 p-3 bg-light rounded border">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-bold">Pilih Kelas</label>
                             <select name="kelas_id" class="form-select" required>
                                 <option value="">-- Pilih Kelas --</option>
                                 @foreach($daftarKelas as $kelas)
-                                <option value="{{ $kelas->id }}" {{ $selectedKelas == $kelas->id ? 'selected' : '' }}>
-                                    {{ $kelas->nama_kelas }}
-                                </option>
+                                <option value="{{ $kelas->id }}" {{ $selectedKelas == $kelas->id ? 'selected' : '' }}>{{ $kelas->nama_kelas }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Bulan</label>
-                            <select name="bulan" class="form-select">
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">Dari Bulan</label>
+                            <select name="bulan_awal" id="bulan_awal" class="form-select bulan-select">
                                 @foreach(range(1, 12) as $m)
-                                <option value="{{ sprintf('%02d', $m) }}" {{ $selectedBulan == sprintf('%02d', $m) ? 'selected' : '' }}>
+                                <option value="{{ sprintf('%02d', $m) }}" {{ $bulanAwal == sprintf('%02d', $m) ? 'selected' : '' }}>
                                     {{ date('F', mktime(0, 0, 0, $m, 1)) }}
                                 </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">Sampai Bulan</label>
+                            <select name="bulan_akhir" id="bulan_akhir" class="form-select bulan-select">
+                                @foreach(range(1, 12) as $m)
+                                <option value="{{ sprintf('%02d', $m) }}" {{ $bulanAkhir == sprintf('%02d', $m) ? 'selected' : '' }}>
+                                    {{ date('F', mktime(0, 0, 0, $m, 1)) }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
                             <label class="form-label fw-bold">Tahun</label>
-                            <select name="tahun" class="form-select">
+                            <select name="tahun" id="tahun_filter" class="form-select">
                                 @for($y = date('Y'); $y >= 2024; $y--)
                                 <option value="{{ $y }}" {{ $selectedTahun == $y ? 'selected' : '' }}>{{ $y }}</option>
                                 @endfor
                             </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
+
+                        <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-search me-1"></i> Filter
+                                <i class="fas fa-search me-1"></i> Filter Data
                             </button>
                         </div>
                     </form>
-
                     @if($selectedKelas)
                     <div class="d-flex justify-content-between align-items-center mb-4 p-2 bg-white rounded shadow-sm border">
                         <div>
@@ -54,37 +65,21 @@
                                 <span class="badge bg-primary">{{ $daftarKelas->where('id', $selectedKelas)->first()->nama_kelas }}</span>
                             </h6>
                             <small class="text-muted">
-                                Periode: {{ date('F Y', mktime(0, 0, 0, $selectedBulan, 1, $selectedTahun)) }}
+                                Periode: {{ date('F', mktime(0, 0, 0, $bulanAwal, 1)) }} s/d {{ date('F Y', mktime(0, 0, 0, $bulanAkhir, 1, $selectedTahun)) }}
                             </small>
                         </div>
 
                         <div class="btn-group">
-                            <button type="button" class="btn btn-success dropdown-toggle shadow-sm" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-file-excel me-1"></i> Export Laporan
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
-                                <li>
-                                    <h6 class="dropdown-header">Pilih Rentang Laporan</h6>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('rekap.export', ['tipe' => 'bulanan', 'kelas_id' => $selectedKelas, 'bulan' => $selectedBulan, 'tahun' => $selectedTahun]) }}">
-                                        <i class="fas fa-calendar-day me-2 text-success"></i>Rekap Bulan Ini
-                                    </a>
-                                </li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('rekap.export', ['tipe' => 'semester', 'kelas_id' => $selectedKelas, 'semester' => 1, 'tahun' => $selectedTahun]) }}">
-                                        <i class="fas fa-file-signature me-2 text-primary"></i>Rekap Semester Ganjil
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('rekap.export', ['tipe' => 'semester', 'kelas_id' => $selectedKelas, 'semester' => 2, 'tahun' => $selectedTahun]) }}">
-                                        <i class="fas fa-file-signature me-2 text-primary"></i>Rekap Semester Genap
-                                    </a>
-                                </li>
-                            </ul>
+                            {{-- Tombol Langsung Export sesuai Filter --}}
+                            <a href="{{ route('rekap.export', [
+        'tipe' => 'bulanan', 
+        'kelas_id' => $selectedKelas, 
+        'bulan_awal' => $bulanAwal, 
+        'bulan_akhir' => $bulanAkhir, 
+        'tahun' => $selectedTahun
+    ]) }}" class="btn btn-success shadow-sm">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
+                            </a>
                         </div>
                     </div>
 
@@ -139,4 +134,32 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const bulanSelects = document.querySelectorAll('.bulan-select');
+        const tahunSelect = document.getElementById('tahun_filter');
+        const currentMonth = new Date().getMonth() + 1; // 1-12
+        const currentYear = new Date().getFullYear();
+
+        function lockFutureMonths() {
+            const selectedYear = parseInt(tahunSelect.value);
+
+            bulanSelects.forEach(select => {
+                Array.from(select.options).forEach(option => {
+                    const optionMonth = parseInt(option.value);
+
+                    // Disable bulan jika tahun yang dipilih adalah tahun sekarang DAN bulan > bulan sekarang
+                    if (selectedYear === currentYear && optionMonth > currentMonth) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
+            });
+        }
+
+        tahunSelect.addEventListener('change', lockFutureMonths);
+        lockFutureMonths(); // Jalankan saat load
+    });
+</script>
 @endsection
