@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\IzinController;
 use App\Http\Controllers\Api\JadwalController;
 use App\Http\Controllers\Api\JurnalController;
+use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\ProfileController;
 
 // Controller PresensiController & IzinController bisa ditambah nanti jika fiturnya sudah dibuat
@@ -38,8 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/jadwal-hari-ini', [JadwalController::class, 'index']); // <--- Panggil 'index'
-    Route::post('/mulai-kelas', [JadwalController::class, 'mulaiKelas']); // <--- Tambah ini
+    Route::get('/kelas', [KelasController::class, 'index']);
+    Route::get('/jadwal-hari-ini', [JadwalController::class, 'index']); 
+    Route::post('/mulai-kelas', [JadwalController::class, 'mulaiKelas']);
+    Route::get('/jadwal-piket', [JadwalController::class, 'piketIndex']);
     Route::get('/walikelas/siswa', [IzinController::class, 'getSiswa']);
     Route::post('/walikelas/izin', [IzinController::class, 'inputIzin']);
     Route::get('/walikelas/riwayat-izin', [IzinController::class, 'getRiwayatIzin']);

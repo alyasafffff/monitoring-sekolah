@@ -6,39 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('jurnals', function (Blueprint $table) {
             $table->id();
             
-            // Relasi ke Jadwal
+            // 1. Relasi ke Jadwal (Jadwal ini punya Guru Asli)
             $table->foreignId('jadwal_id')->constrained('jadwal_pelajaran')->cascadeOnDelete();
             
-            $table->date('tanggal'); 
+            // 2. Relasi ke Guru Pengisi (Siapa yang benar-benar mengajar saat itu)
+            // Kita kasih nullable() agar jika guru asli yang mengajar, kita bisa fleksibel (atau tetap diisi ID guru asli)
+            $table->foreignId('guru_id')->constrained('users')->cascadeOnDelete();
             
-            // MATERI (Inti Pembelajaran)
+            $table->date('tanggal'); 
             $table->text('materi')->nullable(); 
-
-            // CATATAN TAMBAHAN (Masalah Fasilitas/Siswa/Lainnya)
-            // Kita taruh setelah materi, sifatnya nullable (boleh kosong)
             $table->text('catatan')->nullable(); 
             
-            // Status Kehadiran GURU
+            // Status Kehadiran GURU yang mengajar (Hadir/Izin/Sakit)
             $table->enum('status_guru', ['Hadir', 'Izin', 'Sakit'])->default('Hadir');
 
-            // Status Pengisian Jurnal
+            // Status Pengisian Jurnal (proses = sedang absen, selesai = sudah simpan materi)
             $table->enum('status_pengisian', ['proses', 'selesai'])->default('proses');
 
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('jurnals');

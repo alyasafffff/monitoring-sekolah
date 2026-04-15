@@ -140,9 +140,18 @@ class JurnalController extends Controller
             ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
             ->join('kelas', 'jadwal_pelajaran.kelas_id', '=', 'kelas.id')
             ->join('mata_pelajaran', 'jadwal_pelajaran.mapel_id', '=', 'mata_pelajaran.id')
-            // TAMBAHKAN JOIN INI: Biar bisa ambil jam dari master config
             ->join('jam_pelajaran_config', 'jadwal_pelajaran.jam_pelajaran_config_id', '=', 'jam_pelajaran_config.id')
-            ->where('jadwal_pelajaran.guru_id', $user->id)
+            // Join ke user untuk tahu siapa yang BENAR-BENAR mengisi jurnal
+            ->join('users as pengisi', 'jurnals.guru_id', '=', 'pengisi.id')
+            // Join ke user untuk tahu siapa PEMILIK jadwal asli
+            ->join('users as guru_asli', 'jadwal_pelajaran.guru_id', '=', 'guru_asli.id')
+
+            // FILTER: Ambil jika saya pengisinya OR saya pemilik jadwalnya
+            ->where(function ($query) use ($user) {
+                $query->where('jurnals.guru_id', $user->id)
+                    ->orWhere('jadwal_pelajaran.guru_id', $user->id);
+            })
+
             ->select(
                 'jurnals.id',
                 'jurnals.tanggal',
@@ -150,10 +159,21 @@ class JurnalController extends Controller
                 'jurnals.status_pengisian',
                 'kelas.nama_kelas',
                 'mata_pelajaran.nama_mapel',
-                // AMBIL DARI TABEL CONFIG (Bukan dari jadwal_pelajaran)
                 'jam_pelajaran_config.jam_mulai',
                 'jam_pelajaran_config.jam_selesai',
-                // Subquery statistik tetap sama
+                'pengisi.name as nama_pengisi', // Nama yang benar-benar masuk
+                'guru_asli.name as nama_guru_asli', // Nama pemilik jadwal
+
+                // LOGIKA TIPE:
+                // 1. Jika pengisi == saya && pemilik == saya -> 'asli'
+                // 2. Jika pengisi == saya && pemilik != saya -> 'piket' (saya yang piket)
+                // 3. Jika pengisi != saya && pemilik == saya -> 'digantikan' (saya digantikan orang lain)
+                DB::raw('CASE 
+                WHEN jurnals.guru_id = ' . $user->id . ' AND jadwal_pelajaran.guru_id = ' . $user->id . ' THEN "asli"
+                WHEN jurnals.guru_id = ' . $user->id . ' AND jadwal_pelajaran.guru_id != ' . $user->id . ' THEN "piket"
+                ELSE "digantikan"
+            END as tipe_mengajar'),
+
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Hadir") as hadir'),
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Sakit") as sakit'),
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Izin") as izin'),
