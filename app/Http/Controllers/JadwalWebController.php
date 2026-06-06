@@ -91,10 +91,10 @@ class JadwalWebController extends Controller
 
         // Ambil data yang sama dengan yang tampil di web
         $data = $this->getJadwalDataArray($kelas_id);
-        
+
         // Load view PDF (pastikan file resources/views/dashboard/jadwal/pdf.blade.php sudah ada)
         $pdf = Pdf::loadView('dashboard.jadwal.pdf', $data)
-                  ->setPaper('a4', 'landscape'); 
+            ->setPaper('a4', 'landscape');
 
         return $pdf->download('Jadwal_Kelas_' . $data['kelas_terpilih']->nama_kelas . '.pdf');
     }
@@ -126,17 +126,32 @@ class JadwalWebController extends Controller
             'jam_pelajaran_config_id' => 'required',
         ]);
 
+        // LOGIKA PENENTUAN GURU & ID
         if ($request->filled('kegiatan_id')) {
+            // Jika Tipe KEGIATAN: Ambil Wali Kelas dari tabel kelas
             $kelas = DB::table('kelas')->where('id', $request->kelas_id)->first();
+
+            // Proteksi: Jika Wali Kelas belum di-set di tabel Kelas, arahkan untuk isi dulu
+            if (!$kelas || !$kelas->wali_kelas_id) {
+                return back()->withInput()->with('error', 'Gagal! Wali Kelas untuk kelas ini belum ditentukan. Harap atur Wali Kelas di menu Data Kelas terlebih dahulu.');
+            }
+
             $guru_id = $kelas->wali_kelas_id;
             $mapel_id = null;
             $kegiatan_id = $request->kegiatan_id;
         } else {
+            // Jika Tipe MAPEL: Ambil Guru dari Input Form
             $guru_id = $request->guru_id;
             $mapel_id = $request->mapel_id;
             $kegiatan_id = null;
+
+            // Proteksi: Jika tipe Mapel tapi guru tidak dipilih
+            if (!$guru_id) {
+                return back()->withInput()->with('error', 'Gagal! Silakan pilih Guru Pengampu untuk Mata Pelajaran ini.');
+            }
         }
 
+        // --- SISANYA TETAP SAMA (Logika Bentrok & Insert) ---
         $bentrok = DB::table('jadwal_pelajaran')
             ->join('kelas', 'jadwal_pelajaran.kelas_id', '=', 'kelas.id')
             ->where('jadwal_pelajaran.guru_id', $guru_id)

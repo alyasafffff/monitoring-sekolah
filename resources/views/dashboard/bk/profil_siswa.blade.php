@@ -73,7 +73,7 @@
     @else
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="fw-bold text-danger mb-0">Direktori Siswa</h2>
+                <h2 class="fw-bold text-danger mb-0">Profil Siswa</h2>
                 <p class="text-muted small mb-0">Klik pada baris siswa untuk melihat detail informasi</p>
             </div>
             <div class="text-end">

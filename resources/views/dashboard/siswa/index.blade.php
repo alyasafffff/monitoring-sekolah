@@ -11,31 +11,52 @@
 
     <div class="card shadow border-0 mb-4">
         <div class="card-body">
-            <form action="{{ route('siswa.index') }}" method="GET" class="row g-3 align-items-center">
-                <div class="col-md-3">
-                    <select name="filter_kelas" class="form-select border-primary shadow-sm" onchange="this.form.submit()">
-                        <option value="">-- Semua Kelas --</option>
-                        @foreach($list_kelas as $k)
-                        <option value="{{ $k->id }}" {{ request('filter_kelas') == $k->id ? 'selected' : '' }}>
-                            Kelas {{ $k->nama_kelas }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
+            <form action="{{ route('siswa.index') }}" method="GET" class="card shadow-sm border-0 mb-4 d-print-none" style="border-radius: 12px;">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        {{-- 1. Filter Kelas --}}
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Filter Kelas</label>
+                            <select name="filter_kelas" class="form-select border-primary shadow-sm" onchange="this.form.submit()">
+                                <option value="">-- Semua Kelas --</option>
+                                @foreach($list_kelas as $k)
+                                <option value="{{ $k->id }}" {{ request('filter_kelas') == $k->id ? 'selected' : '' }}>
+                                    Kelas {{ $k->nama_kelas }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <input type="text" name="q" class="form-control border-primary" placeholder="Cari Nama atau NISN..." value="{{ request('q') }}">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
+                        {{-- 2. Input Pencarian --}}
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-2">Cari Nama / NISN</label>
+                            <div class="input-group shadow-sm">
+                                <input type="text" name="q" class="form-control border-primary" placeholder="Masukkan kata kunci..." value="{{ request('q') }}">
+                                <button class="btn btn-primary px-3" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- 3. Area Tombol Aksi --}}
+                        <div class="col-md-5">
+                            {{-- Label kosong agar tinggi kolom tombol sama dengan kolom input --}}
+                            <label class="form-label d-block mb-2">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                @if(request('filter_kelas'))
+                                <a href="{{ route('siswa.cetak_kelas', request('filter_kelas')) }}" target="_blank" class="btn btn-success fw-bold shadow-sm flex-grow-1">
+                                    <i class="fas fa-print me-1"></i> Cetak Kartu
+                                </a>
+                                @endif
+
+                                @if(request('filter_kelas') || request('q'))
+                                <a href="{{ route('siswa.index') }}" class="btn btn-outline-secondary fw-bold px-3">
+                                    <i class="fas fa-undo me-1"></i> Reset
+                                </a>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div class="col-auto">
-                    @if(request('filter_kelas') || request('q'))
-                    <a href="{{ route('siswa.index') }}" class="btn btn-outline-secondary">Reset</a>
-                    @endif
                 </div>
             </form>
         </div>

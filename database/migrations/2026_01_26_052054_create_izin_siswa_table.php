@@ -19,9 +19,12 @@ return new class extends Migration
             $table->date('tanggal_izin');
             $table->enum('status', ['Sakit', 'Izin', 'Dispensasi']);
             $table->text('keterangan')->nullable(); 
+
+            // --- TAMBAHAN BARU: Kolom Foto ---
+            // Kita gunakan string karena yang disimpan adalah path/nama filenya saja
+            $table->string('bukti_foto')->nullable(); 
             
-            // --- PERUBAHAN: Menggunakan Jam Ke (Sesi) ---
-            // Jika jam_ke_mulai NULL, sistem menganggap izin SEHARIAN (Full Day)
+            // --- Menggunakan Jam Ke (Sesi) ---
             $table->integer('jam_ke_mulai')->nullable();
             $table->integer('jam_ke_selesai')->nullable();
 

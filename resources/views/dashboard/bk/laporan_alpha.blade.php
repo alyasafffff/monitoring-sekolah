@@ -1,123 +1,82 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <h2 class="fw-bold text-danger mb-4">Laporan Pelanggaran (Alpha)</h2>
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-danger m-0">Laporan Pelanggaran (Alpha)</h2>
+            <p class="text-muted small m-0">Data ketidakhadiran siswa yang terdeteksi otomatis.</p>
+        </div>
+        {{-- Tombol Cetak Membuka Tab Baru --}}
+        <a href="{{ route('bk.laporan.print', request()->all()) }}" target="_blank" class="btn btn-dark fw-bold px-4 shadow-sm">
+            <i class="fas fa-print me-2"></i>Cetak PDF
+        </a>
+    </div>
 
     {{-- Card Filter --}}
-    <div class="card shadow border-0 mb-4 d-print-none"> {{-- d-print-none agar filter tidak ikut tercetak --}}
-        <div class="card-body">
-            <form action="{{ route('bk.laporan.alpha') }}" method="GET" class="row g-3">
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-body p-4">
+            <form action="{{ route('bk.laporan.alpha') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label fw-bold">Pilih Kelas</label>
-                    <select name="kelas_id" class="form-select border-danger-subtle">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Kelas</label>
+                    <select name="kelas_id" class="form-select border-secondary-subtle">
                         <option value="">Semua Kelas</option>
                         @foreach($daftarKelas as $k)
                         <option value="{{ $k->id }}" {{ $selectedKelas == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">Dari Tanggal</label>
-                    <input type="date" name="tgl_mulai" class="form-control border-danger-subtle" value="{{ $tglMulai }}">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Mulai Tanggal</label>
+                    <input type="date" name="tgl_mulai" class="form-control" value="{{ $tglMulai }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">Sampai Tanggal</label>
-                    <input type="date" name="tgl_selesai" class="form-control border-danger-subtle" value="{{ $tglSelesai }}">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Sampai Tanggal</label>
+                    <input type="date" name="tgl_selesai" class="form-control" value="{{ $tglSelesai }}">
                 </div>
-                
-                {{-- Area Tombol Aksi --}}
-                <div class="col-md-5 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-danger flex-grow-1 fw-bold">
-                        <i class="fas fa-search me-2"></i>Filter
-                    </button>
-                    
-                    {{-- Tombol Export Excel --}}
-                    <a href="{{ route('bk.laporan.export', request()->all()) }}" class="btn btn-success fw-bold">
-                        <i class="fas fa-file-excel me-2"></i>Excel
-                    </a>
-
-                    {{-- Tombol Print (PDF) --}}
-                    <button type="button" onclick="window.print()" class="btn btn-dark fw-bold">
-                        <i class="fas fa-print me-2"></i>Cetak
-                    </button>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-danger w-100 fw-bold">Filter Data</button>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- Tabel Data --}}
-    <div class="card shadow border-0">
-        <div class="card-body">
-            {{-- Header Laporan saat di-Print --}}
-            <div class="d-none d-print-block text-center mb-4">
-                <h3 class="fw-bold">LAPORAN PRESENSI SISWA (ALPHA)</h3>
-                <p class="mb-0">Periode: {{ \Carbon\Carbon::parse($tglMulai)->format('d/m/Y') }} s/d {{ \Carbon\Carbon::parse($tglSelesai)->format('d/m/Y') }}</p>
-                <hr>
-            </div>
-
+    {{-- Tampilan Tabel di Dashboard --}}
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light text-dark">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
+                            <th class="text-center">No</th>
                             <th>Tanggal</th>
                             <th>Nama Siswa</th>
                             <th>Kelas</th>
                             <th>Mata Pelajaran</th>
-                            <th>Waktu Pelajaran</th>
-                            <th>Guru Mapel</th>
+                            <th>Waktu</th>
+                            <th>Guru</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($dataAlpha as $d)
+                        @forelse($dataAlpha as $index => $d)
                         <tr>
-                            <td class="small">{{ \Carbon\Carbon::parse($d->tanggal)->translatedFormat('d/m/Y') }}</td>
-                            <td class="fw-bold text-danger">{{ $d->nama_siswa }}</td>
+                            <td class="text-center text-muted small">{{ $index + 1 }}</td>
+                            <td>{{ \Carbon\Carbon::parse($d->tanggal)->format('d/m/Y') }}</td>
+                            <td class="fw-bold">{{ $d->nama_siswa }}</td>
                             <td><span class="badge bg-secondary-subtle text-secondary border">{{ $d->nama_kelas }}</span></td>
                             <td>{{ $d->nama_mapel }}</td>
-                            <td>
-                                <small class="badge bg-light text-dark border fw-normal">
-                                    {{ substr($d->jam_mulai_gabung, 0, 5) }} - {{ substr($d->jam_selesai_gabung, 0, 5) }}
-                                </small>
-                            </td>
-                            <td class="text-muted"><small>{{ $d->nama_guru }}</small></td>
+                            <td class="small text-muted">{{ substr($d->jam_mulai_gabung, 0, 5) }} - {{ substr($d->jam_selesai_gabung, 0, 5) }}</td>
+                            <td class="small italic">{{ $d->nama_guru }}</td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted small">
-                                <i class="fas fa-search fa-2x mb-3 d-block opacity-25"></i>
-                                Tidak ada data Alpha ditemukan.
-                            </td>
+                            <td colspan="7" class="text-center py-5 text-muted">Data tidak ditemukan.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
-            {{-- Footer Tanda Tangan saat di-Print --}}
-            <div class="d-none d-print-block mt-5">
-                <div class="row">
-                    <div class="col-8"></div>
-                    <div class="col-4 text-center">
-                        <p class="mb-5">Malang, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}<br>Guru BK,</p>
-                        <br><br>
-                        <p class="fw-bold">( ____________________ )</p>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
-
-{{-- CSS Khusus Print --}}
-<style>
-@media print {
-    .main-container { padding: 0 !important; }
-    .card { box-shadow: none !important; border: none !important; }
-    body { background-color: white !important; }
-    .table-light { background-color: #f8f9fa !important; }
-    /* Menghilangkan elemen dashboard saat print */
-    #sidebar, .top-navbar, .d-print-none { display: none !important; }
-}
-</style>
 @endsection

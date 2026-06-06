@@ -19,6 +19,7 @@ class IzinSiswa extends Model
         'tanggal_izin',
         'status',
         'keterangan',
+        'bukti_foto',
         'jam_ke_mulai',
         'jam_ke_selesai'
     ];

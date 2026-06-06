@@ -41,7 +41,7 @@
         <div class="col-lg-6 mb-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white py-3 border-0">
-                    <h6 class="fw-bold m-0">Tren Kedisiplinan (7 Hari)</h6>
+                    <h6 class="fw-bold m-0">Grafik Kedisiplinan Siswa 7 Hari Terakhir</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="alphaChart"

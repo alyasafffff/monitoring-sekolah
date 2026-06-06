@@ -54,16 +54,18 @@ class IzinController extends Controller
     // ========================================================================
     public function inputIzin(Request $request)
     {
-        // A. Validasi (Ubah format jam_mulai jadi integer/jam_ke)
+        // A. Validasi (Tambahkan 'foto' di sini)
         $request->validate([
             'siswa_id' => 'required|integer',
             'status' => 'required|in:Sakit,Izin',
             'jenis_izin' => 'required|in:full,jam',
             'keterangan' => 'nullable|string',
 
-            // SEKARANG PAKAI INTEGER (Jam Ke-1, Jam Ke-2, dst)
+            // Validasi Foto: Maksimal 2MB, format gambar
+            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+
             'jam_ke_mulai' => 'nullable|integer|min:1',
-            'jam_ke_selesai' => 'nullable|integer|min:1|after_or_equal:jam_ke_mulai',
+            'jam_ke_selesai' => 'nullable|integer|min:1',
 
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
@@ -71,7 +73,7 @@ class IzinController extends Controller
 
         $guru_login_id = $request->user()->id;
 
-        // B. Cek Hak Akses Wali Kelas (Tetap sama)
+        // B. Cek Hak Akses (Tetap sama seperti sebelumnya)
         $siswa = DB::table('siswa')->where('id', $request->siswa_id)->first();
         if (!$siswa) return response()->json(['success' => false, 'message' => 'Siswa tidak ditemukan.'], 404);
 
@@ -80,32 +82,31 @@ class IzinController extends Controller
             return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
         }
 
-        // C. Siapkan Data Jam (Ganti variabel jam jadi jam_ke)
-        $jamKeMulai = null;
-        $jamKeSelesai = null;
-        if ($request->jenis_izin == 'jam') {
-            if (!$request->jam_ke_mulai || !$request->jam_ke_selesai) {
-                return response()->json(['success' => false, 'message' => 'Sesi jam wajib diisi untuk izin parsial.'], 400);
-            }
-            $jamKeMulai = $request->jam_ke_mulai;
-            $jamKeSelesai = $request->jam_ke_selesai;
+        // C. Proses Upload Foto (Jika ada)
+        $namaFileFoto = null;
+        if ($request->hasFile('foto')) {
+            // Kita simpan di folder 'public/bukti_izin'
+            // store() akan otomatis generate nama unik buat filenya
+            $path = $request->file('foto')->store('bukti_izin', 'public');
+            $namaFileFoto = $path;
         }
 
-        // D. LOOPING TANGGAL (Pakai Model IzinSiswa)
+        // D. Siapkan Data Jam
+        $jamKeMulai = ($request->jenis_izin == 'jam') ? $request->jam_ke_mulai : null;
+        $jamKeSelesai = ($request->jenis_izin == 'jam') ? $request->jam_ke_selesai : null;
+
+        // E. LOOPING TANGGAL
         $startDate = Carbon::parse($request->tanggal_mulai);
         $endDate = Carbon::parse($request->tanggal_selesai);
-
         $suksesCount = 0;
 
         while ($startDate->lte($endDate)) {
             $tanggalSaatIni = $startDate->format('Y-m-d');
 
-            // 1. Cek Dobel
             $cek = IzinSiswa::where('siswa_id', $request->siswa_id)
                 ->where('tanggal_izin', $tanggalSaatIni)
                 ->exists();
 
-            // 2. Simpan Pakai Nama Kolom Baru (jam_ke_mulai & jam_ke_selesai)
             if (!$cek) {
                 IzinSiswa::create([
                     'siswa_id'      => $request->siswa_id,
@@ -113,12 +114,12 @@ class IzinController extends Controller
                     'tanggal_izin'  => $tanggalSaatIni,
                     'status'        => $request->status,
                     'keterangan'    => $request->keterangan,
-                    'jam_ke_mulai'  => $jamKeMulai, // Hasil input integer
-                    'jam_ke_selesai' => $jamKeSelesai, // Hasil input integer
+                    'bukti_foto'    => $namaFileFoto, // Simpan path fotonya
+                    'jam_ke_mulai'  => $jamKeMulai,
+                    'jam_ke_selesai' => $jamKeSelesai,
                 ]);
                 $suksesCount++;
             }
-
             $startDate->addDay();
         }
 
@@ -129,51 +130,54 @@ class IzinController extends Controller
         return response()->json(['success' => true, 'message' => "Berhasil mencatat izin untuk $suksesCount hari."], 200);
     }
     public function getRiwayatIzin(Request $request)
-{
-    $user = $request->user(); 
+    {
+        $user = $request->user();
 
-    try {
-        // 1. Cari dulu ID Kelas yang dipegang oleh Guru ini
-        $kelas = DB::table('kelas')->where('wali_kelas_id', $user->id)->first();
+        try {
+            $kelas = DB::table('kelas')->where('wali_kelas_id', $user->id)->first();
 
-        if (!$kelas) {
+            if (!$kelas) {
+                return response()->json(['success' => false, 'message' => 'Data kelas tidak ditemukan.'], 404);
+            }
+
+            $riwayat = DB::table('izin_siswa')
+                ->join('siswa', 'izin_siswa.siswa_id', '=', 'siswa.id')
+                ->where('siswa.kelas_id', $kelas->id)
+                ->select(
+                    DB::raw("MAX(izin_siswa.id) as id"), // Gunakan MAX agar ID tidak rancu saat grouping
+                    'siswa.nama_siswa',
+                    'izin_siswa.status',
+                    'izin_siswa.keterangan',
+                    'izin_siswa.bukti_foto',
+                    'izin_siswa.jam_ke_mulai',
+                    'izin_siswa.jam_ke_selesai',
+                    DB::raw("MIN(izin_siswa.tanggal_izin) as tanggal_mulai"),
+                    DB::raw("MAX(izin_siswa.tanggal_izin) as tanggal_selesai"),
+                    DB::raw("COUNT(*) as total_hari")
+                )
+                ->groupBy(
+                    'siswa.nama_siswa',
+                    'izin_siswa.status',
+                    'izin_siswa.keterangan',
+                    'izin_siswa.bukti_foto',
+                    'izin_siswa.jam_ke_mulai',
+                    'izin_siswa.jam_ke_selesai'
+                )
+                ->orderBy('tanggal_mulai', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    // Tambahkan URL foto secara dinamis setelah get data
+                    $item->jenis_izin = is_null($item->jam_ke_mulai) ? 'full' : 'jam';
+                    $item->url_foto = $item->bukti_foto ? url('storage/' . $item->bukti_foto) : null;
+                    return $item;
+                });
+
             return response()->json([
-                'success' => false,
-                'message' => 'Data kelas tidak ditemukan untuk wali kelas ini.'
-            ], 404);
+                'success' => true,
+                'data' => $riwayat
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
-
-        // 2. Ambil riwayat izin berdasarkan kelas tersebut
-        $riwayat = DB::table('izin_siswa')
-            ->join('siswa', 'izin_siswa.siswa_id', '=', 'siswa.id')
-            ->where('siswa.kelas_id', $kelas->id) // Filter pakai ID Kelas yang ketemu tadi
-            ->select(
-                'izin_siswa.id',
-                'siswa.nama_siswa', // Sesuaikan dengan kolom 'nama_siswa' di tabel siswa kamu
-                'izin_siswa.status',
-                // 'jenis_izin' mungkin tidak ada di DB jika kamu hanya simpan per tanggal tunggal
-                DB::raw("IF(izin_siswa.jam_ke_mulai IS NULL, 'full', 'jam') as jenis_izin"), 
-                'izin_siswa.tanggal_izin as tanggal_mulai', // Aliasing agar sesuai dengan Model di Flutter
-                'izin_siswa.tanggal_izin as tanggal_selesai',
-                'izin_siswa.jam_ke_mulai',
-                'izin_siswa.jam_ke_selesai',
-                'izin_siswa.keterangan'
-            )
-            ->orderBy('izin_siswa.tanggal_izin', 'desc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Daftar riwayat izin berhasil diambil',
-            'data' => $riwayat
-        ], 200);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            // Baris ini akan mengirim pesan error asli ke Flutter agar kamu bisa baca di debug console
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage() 
-        ], 500);
     }
-}
 }

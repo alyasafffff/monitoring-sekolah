@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SIMONS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        /* BACKGROUND UTAMA - Kita buat lebih deep dan bertekstur */
         body {
             background: radial-gradient(circle at top left, #1a3c5d 0%, #0a192f 100%);
             height: 100vh;
@@ -17,7 +18,6 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* Pola dekoratif halus di background utama agar tidak flat */
         body::before {
             content: "";
             position: absolute;
@@ -32,7 +32,7 @@
             background: white;
             border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
             width: 90%;
             max-width: 950px;
             display: flex;
@@ -40,7 +40,6 @@
             z-index: 1;
         }
 
-        /* Sisi Kiri - Putih Bersih agar Logo Pop Out */
         .login-visual {
             background-color: #ffffff;
             flex: 1.2;
@@ -53,7 +52,6 @@
             position: relative;
         }
 
-        /* Aksen garis orange di antara kiri dan kanan */
         .login-visual::after {
             content: "";
             position: absolute;
@@ -67,7 +65,7 @@
         .brand-img {
             max-width: 240px;
             margin-bottom: 25px;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.08));
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.08));
         }
 
         .brand-title {
@@ -78,14 +76,13 @@
         }
 
         .brand-subtitle {
-            color: #ff8c00; /* Gunakan Orange agar lebih hidup */
+            color: #ff8c00;
             font-weight: 600;
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
-        /* Sisi Kanan - Form Login */
         .login-form-section {
             flex: 1;
             padding: 60px;
@@ -131,14 +128,24 @@
             box-shadow: 0 10px 20px rgba(255, 140, 0, 0.2);
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .login-container { flex-direction: column; max-width: 450px; }
-            .login-visual::after { display: none; }
-            .login-visual { padding: 40px 20px; border-bottom: 1px solid #eee; }
+            .login-container {
+                flex-direction: column;
+                max-width: 450px;
+            }
+
+            .login-visual::after {
+                display: none;
+            }
+
+            .login-visual {
+                padding: 40px 20px;
+                border-bottom: 1px solid #eee;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="login-container">
@@ -148,31 +155,92 @@
             <p class="brand-subtitle">Sistem Monitoring Sekolah</p>
         </div>
 
-<div class="login-form-section">
-    <div class="mb-3">
-        <h3 class="fw-bold" style="color: #1a3c5d;">Otentikasi Pengguna</h3>
-        <p class="text-muted">Akses dasbor manajemen dan monitoring sekolah</p>
-    </div>
+        <div class="login-form-section">
+            <div class="mb-3">
+                <h3 class="fw-bold" style="color: #1a3c5d;">Otentikasi Pengguna</h3>
+                <p class="text-muted">Akses dasbor manajemen dan monitoring sekolah</p>
+                
+                @if ($errors->any())
+                <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius: 12px;">
+                    <ul class="mb-0 list-unstyled">
+                        @foreach ($errors->all() as $error)
+                        <li><i class="bi bi-exclamation-circle me-2"></i>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+            </div>
 
-    <form action="{{ route('login.post') }}" method="POST">
-        @csrf
-        <div class="mb-3">
-            <label class="form-label fw-bold text-uppercase small" style="letter-spacing: 1px;">Nomor Induk Pegawai (NIP)</label>
-            <input type="text" name="nip" class="form-control" placeholder="Masukkan NIP" required autofocus>
+            <form action="{{ route('login.post') }}" method="POST" id="loginForm">
+                @csrf
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-uppercase small" style="letter-spacing: 1px;">Nomor Induk Pegawai (NIP)</label>
+                    <input type="text" 
+                        id="nip" 
+                        name="nip" 
+                        class="form-control" 
+                        placeholder="Masukkan NIP" 
+                        required 
+                        autofocus
+                        inputmode="numeric"
+                        maxlength="18">
+                    
+                    <div id="nip-alert" style="display: none; color: #dc3545; font-size: 0.8rem; margin-top: 5px; font-weight: 600;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> NIP hanya boleh berisi angka!
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-uppercase small" style="letter-spacing: 1px;">Kata Sandi</label>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="submitBtn" class="btn btn-primary w-100 shadow-sm">MASUK</button>
+            </form>
+
+            <div class="mt-5 text-center">
+                <p class="small text-muted mb-0">Kendala akses? <span class="text-decoration-none fw-bold" style="color: #ff8c00; cursor: pointer;">Hubungi Administrator IT</span></p>
+            </div>
         </div>
-        <div class="mb-4">
-            <label class="form-label fw-bold text-uppercase small" style="letter-spacing: 1px;">Kata Sandi</label>
-            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100 shadow-sm">MASUK</button>
-    </form>
-    
-    <div class="mt-5 text-center">
-        <p class="small text-muted mb-0">Kendala akses? <span href="#" class="text-decoration-none fw-bold" style="color: #ff8c00;">Hubungi Administrator IT</span></p>
-    </div>
-</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const nipInput = document.getElementById('nip');
+        const nipAlert = document.getElementById('nip-alert');
+        const submitBtn = document.getElementById('submitBtn');
+
+        nipInput.addEventListener('input', function (e) {
+            let value = e.target.value;
+            
+            // Cek jika ada karakter selain angka
+            if (/[^0-9]/.test(value)) {
+                // Tampilkan notifikasi merah
+                nipAlert.style.display = 'block';
+                
+                // Hapus karakter yang bukan angka secara paksa
+                e.target.value = value.replace(/[^0-9]/g, '');
+                
+                // Kasih efek getar dikit di input (opsional, biar user sadar)
+                nipInput.classList.add('is-invalid');
+                
+                setTimeout(() => {
+                    nipAlert.style.display = 'none';
+                    nipInput.classList.remove('is-invalid');
+                }, 2000);
+            } else {
+                nipAlert.style.display = 'none';
+                nipInput.classList.remove('is-invalid');
+            }
+        });
+
+        // Mencegah form dikirim jika input kosong atau iseng bypass via console
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            if (/[^0-9]/.test(nipInput.value)) {
+                e.preventDefault();
+                nipAlert.style.display = 'block';
+                alert("Mohon masukkan NIP yang valid (hanya angka).");
+            }
+        });
+    </script>
 </body>
 </html>

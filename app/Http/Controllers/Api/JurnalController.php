@@ -132,26 +132,25 @@ class JurnalController extends Controller
 
     // 3. GET RIWAYAT MENGAJAR
     // 3. GET RIWAYAT MENGAJAR
+    // 3. GET RIWAYAT MENGAJAR
+    // 3. GET RIWAYAT MENGAJAR (VERSI PELEBURAN JAM GANDA SINKRON)
+    // 3. GET RIWAYAT MENGAJAR (REVISI: GRUP MENYATU UNTUK UTAMA & PIKET)
     public function getRiwayat(Request $request)
     {
         $user = $request->user();
 
-        $data = DB::table('jurnals')
+        // 1. Ambil data asli dari database
+        $rawData = DB::table('jurnals')
             ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
             ->join('kelas', 'jadwal_pelajaran.kelas_id', '=', 'kelas.id')
             ->join('mata_pelajaran', 'jadwal_pelajaran.mapel_id', '=', 'mata_pelajaran.id')
             ->join('jam_pelajaran_config', 'jadwal_pelajaran.jam_pelajaran_config_id', '=', 'jam_pelajaran_config.id')
-            // Join ke user untuk tahu siapa yang BENAR-BENAR mengisi jurnal
             ->join('users as pengisi', 'jurnals.guru_id', '=', 'pengisi.id')
-            // Join ke user untuk tahu siapa PEMILIK jadwal asli
             ->join('users as guru_asli', 'jadwal_pelajaran.guru_id', '=', 'guru_asli.id')
-
-            // FILTER: Ambil jika saya pengisinya OR saya pemilik jadwalnya
             ->where(function ($query) use ($user) {
                 $query->where('jurnals.guru_id', $user->id)
                     ->orWhere('jadwal_pelajaran.guru_id', $user->id);
             })
-
             ->select(
                 'jurnals.id',
                 'jurnals.tanggal',
@@ -161,31 +160,59 @@ class JurnalController extends Controller
                 'mata_pelajaran.nama_mapel',
                 'jam_pelajaran_config.jam_mulai',
                 'jam_pelajaran_config.jam_selesai',
-                'pengisi.name as nama_pengisi', // Nama yang benar-benar masuk
-                'guru_asli.name as nama_guru_asli', // Nama pemilik jadwal
-
-                // LOGIKA TIPE:
-                // 1. Jika pengisi == saya && pemilik == saya -> 'asli'
-                // 2. Jika pengisi == saya && pemilik != saya -> 'piket' (saya yang piket)
-                // 3. Jika pengisi != saya && pemilik == saya -> 'digantikan' (saya digantikan orang lain)
+                'pengisi.name as nama_pengisi', 
+                'guru_asli.name as nama_guru_asli', 
                 DB::raw('CASE 
-                WHEN jurnals.guru_id = ' . $user->id . ' AND jadwal_pelajaran.guru_id = ' . $user->id . ' THEN "asli"
-                WHEN jurnals.guru_id = ' . $user->id . ' AND jadwal_pelajaran.guru_id != ' . $user->id . ' THEN "piket"
-                ELSE "digantikan"
-            END as tipe_mengajar'),
-
+                    WHEN jurnals.guru_id = ' . $user->id . ' AND jadwal_pelajaran.guru_id = ' . $user->id . ' THEN "asli"
+                    WHEN jurnals.guru_id = ' . $user->id . ' AND jadwal_pelajaran.guru_id != ' . $user->id . ' THEN "piket"
+                    ELSE "digantikan"
+                END as tipe_mengajar'),
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Hadir") as hadir'),
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Sakit") as sakit'),
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Izin") as izin'),
                 DB::raw('(SELECT COUNT(*) FROM presensi_detail WHERE presensi_detail.jurnal_id = jurnals.id AND status = "Alpha") as alpha')
             )
+            // KUNCI REVISI UTAMA: Kelompokkan per kelas dan mapel dulu, baru urutkan jam mulainya
             ->orderBy('jurnals.tanggal', 'desc')
-            ->orderBy('jam_pelajaran_config.jam_mulai', 'desc')
+            ->orderBy('kelas.nama_kelas', 'asc')
+            ->orderBy('mata_pelajaran.nama_mapel', 'asc')
+            ->orderBy('jam_pelajaran_config.jam_mulai', 'asc')
             ->get();
+
+        // 2. --- LOGIKA PELEBURAN JAM ---
+        $groupedRiwayat = [];
+
+        foreach ($rawData as $current) {
+            if (empty($groupedRiwayat)) {
+                $groupedRiwayat[] = $current;
+            } else {
+                $lastIndex = count($groupedRiwayat) - 1;
+                $last = $groupedRiwayat[$lastIndex];
+
+                // Syarat Lebur Sesi Block: Tanggal, Mapel, Kelas, Status, Tipe Tugas sama, dan Jam Nempel
+                if (
+                    $last->tanggal == $current->tanggal &&
+                    $last->nama_mapel == $current->nama_mapel &&
+                    $last->nama_kelas == $current->nama_kelas &&
+                    $last->tipe_mengajar == $current->tipe_mengajar &&
+                    $last->status_pengisian == $current->status_pengisian &&
+                    $last->jam_selesai == $current->jam_mulai
+                ) {
+                    // Perpanjang jam selesai data terakhir dengan jam selesai sesi saat ini
+                    $groupedRiwayat[$lastIndex]->jam_selesai = $current->jam_selesai;
+                } else {
+                    $groupedRiwayat[] = $current;
+                }
+            }
+        }
+
+        // 3. REVISI URUTAN AKHIR: Balikkan kembali list yang sudah bersih 
+        // agar riwayat mengajar JAM PALING SIANG (terbaru) tetap berada di posisi teratas HP
+        $finalResult = array_reverse($groupedRiwayat);
 
         return response()->json([
             'success' => true,
-            'data' => $data
+            'data' => $finalResult
         ]);
     }
 }

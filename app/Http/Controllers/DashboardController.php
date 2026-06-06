@@ -150,9 +150,10 @@ class DashboardController extends Controller
             }
 
             // 3. MONITOR KESELARASAN MATERI (Query yang sudah diperbaiki)
+            // 3. MONITOR KESELARASAN MATERI (Dikelompokkan per Mapel & Kelas)
             $monitorMateri = DB::table('jurnals')
                 ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
-                ->join('kelas', 'jadwal_pelajaran.kelas_id', '=', 'kelas.id') // Join kelas lewat jadwal
+                ->join('kelas', 'jadwal_pelajaran.kelas_id', '=', 'kelas.id')
                 ->join('mata_pelajaran', 'jadwal_pelajaran.mapel_id', '=', 'mata_pelajaran.id')
                 ->join('users', 'jadwal_pelajaran.guru_id', '=', 'users.id')
                 ->select(
@@ -161,15 +162,18 @@ class DashboardController extends Controller
                     'users.name as nama_guru',
                     'jurnals.materi',
                     'jurnals.tanggal',
-                    // Kita ambil karakter pertama dari nama_kelas sebagai jenjang
                     DB::raw('SUBSTRING(kelas.nama_kelas, 1, 1) as jenjang')
                 )
                 ->whereIn('jurnals.id', function ($query) {
-                    $query->select(DB::raw('MAX(id)'))
-                        ->from('jurnals')
-                        ->groupBy('jadwal_id'); // Ambil materi terakhir per jadwal
+                    // Logika: Ambil ID Jurnal terakhir (MAX) 
+                    // tapi dikelompokkan berdasarkan kombinasi Mapel, Kelas, dan Guru
+                    $query->select(DB::raw('MAX(j.id)'))
+                        ->from('jurnals as j')
+                        ->join('jadwal_pelajaran as jp', 'j.jadwal_id', '=', 'jp.id')
+                        ->groupBy('jp.mapel_id', 'jp.kelas_id', 'jp.guru_id');
                 })
                 ->orderBy('jenjang')
+                ->orderBy('kelas.nama_kelas')
                 ->orderBy('mata_pelajaran.nama_mapel')
                 ->get();
 

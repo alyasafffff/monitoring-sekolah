@@ -72,9 +72,8 @@
         {{-- Live Feed Alpha --}}
         <div class="col-lg-8 mb-4">
             <div class="card shadow border-0">
-                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between border-0">
-                    <h6 class="m-0 fw-bold text-danger"><i class="fas fa-satellite-dish me-2"></i>Live Feed: Deteksi Bolos Terkini</h6>
-                    <span class="badge bg-danger-subtle text-danger px-3">Real-time</span>
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between border-0 border-bottom border-danger" >
+                    <h6 class="m-0 fw-bold text-danger"><i class="fas fa-satellite-dish me-2"></i>Data Alpha Terbaru</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">

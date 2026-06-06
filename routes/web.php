@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('siswa', SiswaWebController::class);
         // URL: /admin/siswa/{id}/cetak
         Route::get('siswa/{id}/cetak', [SiswaWebController::class, 'cetakKartu'])->name('siswa.cetak');
+        Route::get('/siswa/cetak-kelas/{kelas_id}', [SiswaWebController::class, 'cetakKelas'])->name('siswa.cetak_kelas');
 
         // B. Manajemen Kelas (SUDAH DIPINDAH KE DALAM SINI)
         // URL: /admin/kelas
@@ -63,6 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/bk/siswa', [App\Http\Controllers\SiswaBkController::class, 'index'])->name('bk.siswa.index');
         Route::get('/bk/siswa/{id}', [App\Http\Controllers\SiswaBkController::class, 'show'])->name('bk.siswa.show');
         Route::get('/bk/laporan/export', [SiswaBkController::class, 'export'])->name('bk.laporan.export');
+        Route::get('/laporan-alpha/print', [LaporanBkController::class, 'print'])->name('bk.laporan.print');
     });
 
     Route::middleware(['auth', 'role:kepsek'])->prefix('kepsek')->name('kepsek.')->group(function () {

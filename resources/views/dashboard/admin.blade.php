@@ -122,13 +122,13 @@
                             </div>
                             <span>Input Siswa Baru</span>
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 px-0 d-flex align-items-center">
+                        <a href="{{ route('jadwal.index') }}" class="list-group-item list-group-item-action border-0 px-0 d-flex align-items-center">
                             <div class="bg-success-subtle text-success p-2 rounded me-3">
                                 <i class="fas fa-calendar-plus"></i>
                             </div>
                             <span>Atur Jadwal Pelajaran</span>
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action border-0 px-0 d-flex align-items-center">
+                        <a href="{{ route('rekap.index') }}" class="list-group-item list-group-item-action border-0 px-0 d-flex align-items-center">
                             <div class="bg-warning-subtle text-warning p-2 rounded me-3">
                                 <i class="fas fa-print"></i>
                             </div>

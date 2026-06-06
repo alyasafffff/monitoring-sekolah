@@ -14,7 +14,7 @@
             <h2 class="fw-bold text-dark mb-0">Matriks Keselarasan Materi</h2>
             <p class="text-muted small mb-0">Memantau kemajuan materi pengajaran antar kelas jenjang {{ $jenjang }}</p>
         </div>
-        
+
         <div class="col-lg-6 text-end">
             <div class="btn-group shadow-sm bg-white p-1 rounded-3">
                 <a href="?jenjang=7&rel_date={{ $startOfWeek->toDateString() }}" class="btn btn-{{ $jenjang == '7' ? 'primary' : 'light' }} border-0 px-3 fw-bold btn-sm">Kelas 7</a>
@@ -47,13 +47,13 @@
                 </div>
                 <div class="col-md-4 text-end">
                     @if(!$startOfWeek->isCurrentWeek())
-                        <a href="?jenjang={{ $jenjang }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                            <i class="fas fa-undo-alt me-1"></i> Kembali ke Minggu Ini
-                        </a>
+                    <a href="?jenjang={{ $jenjang }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <i class="fas fa-undo-alt me-1"></i> Kembali ke Minggu Ini
+                    </a>
                     @else
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
-                            <i class="fas fa-calendar-check me-1"></i> Minggu Berjalan
-                        </span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                        <i class="fas fa-calendar-check me-1"></i> Minggu Berjalan
+                    </span>
                     @endif
                 </div>
             </div>
@@ -71,9 +71,9 @@
                                 MATA PELAJARAN
                             </th>
                             @foreach($kelasList as $k)
-                                <th class="py-3 text-center border-start border-white-50" style="min-width: 280px;">
-                                    KELAS {{ $k->nama_kelas }}
-                                </th>
+                            <th class="py-3 text-center border-start border-white-50" style="min-width: 280px;">
+                                KELAS {{ $k->nama_kelas }}
+                            </th>
                             @endforeach
                         </tr>
                     </thead>
@@ -89,32 +89,32 @@
                                 </div>
                             </td>
                             @foreach($kelasList as $k)
-                                @php
-                                    $item = $dataJurnal->where('mapel_id', $mapel->id)->where('kelas_id', $k->id)->first();
-                                @endphp
-                                <td class="p-3 border-start h-100" style="vertical-align: top;">
-                                    @if($item)
-                                        <div class="p-3 rounded-3 border h-100 bg-white shadow-xs materi-card">
-                                            <p class="fw-semibold text-dark mb-3" style="font-size: 13.5px; line-height: 1.5; min-height: 40px;">
-                                                {{ $item->materi ?: '—' }}
-                                            </p>
-                                            <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
-                                                <small class="text-muted text-truncate me-2" title="{{ $item->nama_guru }}">
-                                                    <i class="fas fa-user-tie me-1 opacity-50"></i>{{ Str::words($item->nama_guru, 1) }}
-                                                </small>
-                                                <span class="badge bg-light text-dark border-0 fw-medium px-2 py-1" style="font-size: 10px;">
-                                                    {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M') }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div class="text-center py-4 bg-light-subtle rounded-3 border border-dashed d-flex align-items-center justify-content-center h-100" style="min-height: 100px;">
-                                            <div class="text-muted opacity-50">
-                                                <span class="small italic">Belum Ada Laporan</span>
-                                            </div>
-                                        </div>
-                                    @endif
-                                </td>
+                            @php
+                            $item = $dataJurnal->where('mapel_id', $mapel->id)->where('kelas_id', $k->id)->first();
+                            @endphp
+                            <td class="p-3 border-start h-100" style="vertical-align: top;">
+                                @if($item)
+                                <div class="p-3 rounded-3 border h-100 bg-white shadow-xs materi-card">
+                                    <p class="fw-semibold text-dark mb-3" style="font-size: 13.5px; line-height: 1.5; min-height: 40px;">
+                                        {{ $item->materi ?: '—' }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                                        <small class="text-muted text-truncate me-2" title="{{ $item->nama_guru }}">
+                                            <i class="fas fa-user-tie me-1 opacity-50"></i>{{ Str::words($item->nama_guru, 1) }}
+                                        </small>
+                                        <span class="badge bg-light text-dark border-0 fw-medium px-2 py-1" style="font-size: 10px;">
+                                            {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M') }}
+                                        </span>
+                                    </div>
+                                </div>
+                                @else
+                                <div class="text-center py-4 bg-light-subtle rounded-3 border border-dashed d-flex align-items-center justify-content-center h-100" style="min-height: 100px;">
+                                    <div class="text-muted opacity-50">
+                                        <span class="small italic">Belum Ada Laporan</span>
+                                    </div>
+                                </div>
+                                @endif
+                            </td>
                             @endforeach
                         </tr>
                         @empty
@@ -132,20 +132,81 @@
 </div>
 
 <style>
-    /* Shadows & Effects */
-    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .materi-card { transition: transform 0.2s; }
-    .materi-card:hover { transform: translateY(-3px); border-color: #3b82f6 !important; }
-    .table-hover tbody tr:hover td { background-color: rgba(59, 130, 246, 0.01); }
-    
-    /* Sticky Fix */
-    thead th { position: sticky; top: 0; z-index: 20; }
-    
-    /* Scrollbar */
-    .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-    
-    .border-dashed { border-style: dashed !important; border-width: 2px; }
+    /* 1. Kunci Utama: Izinkan container melakukan scroll tetapi buat context layout tersendiri */
+    .table-responsive {
+        position: relative;
+        overflow-auto: auto;
+    }
+
+    /* 2. Pastikan border tabel tidak merusak kalkulasi pixel sticky */
+    table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+
+    /* 3. Atur z-index Header agar tidak tertutup kolom saat di-scroll ke bawah */
+    thead th {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    /* 4. PERBAIKAN STICKY KOLOM MATA PELAJARAN */
+    .sticky-col {
+        position: sticky !important;
+        left: 0 !important;
+        background-color: #f8fafc !important;
+        /* Samakan dengan warna desain defaultmu */
+        z-index: 10 !important;
+    }
+
+    /* Tambahkan efek bayangan halus pembatas kolom saat digeser */
+    td.sticky-col {
+        border-right: 2px solid #e2e8f0 !important;
+        box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Atur titik potong pojok kiri atas (Mata Pelajaran Header) agar z-index paling tinggi */
+    th.sticky-col {
+        z-index: 30 !important;
+        background-color: #3b82f6 !important;
+    }
+
+    /* Kebutuhan visual lainnya tetap dipertahankan */
+    .shadow-xs {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .materi-card {
+        transition: transform 0.2s;
+    }
+
+    .materi-card:hover {
+        transform: translateY(-3px);
+        border-color: #3b82f6 !important;
+    }
+
+    .table-hover tbody tr:hover td {
+        background-color: rgba(59, 130, 246, 0.01);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    .border-dashed {
+        border-style: dashed !important;
+        border-width: 2px;
+    }
 </style>
 @endsection

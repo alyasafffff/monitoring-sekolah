@@ -134,4 +134,19 @@ class SiswaWebController extends Controller
 
         return view('dashboard.siswa.cetak_kartu', compact('siswa'));
     }
+    public function cetakKelas($kelas_id)
+{
+    // Ambil data siswa berdasarkan kelas
+    $siswa = DB::table('siswa')
+                ->join('kelas', 'siswa.kelas_id', '=', 'kelas.id')
+                ->select('siswa.*', 'kelas.nama_kelas')
+                ->where('siswa.kelas_id', $kelas_id)
+                ->get();
+
+    if ($siswa->isEmpty()) {
+        return redirect()->back()->with('error', 'Tidak ada data siswa di kelas ini.');
+    }
+
+    return view('dashboard.siswa.cetak_masal', compact('siswa'));
+}
 }
