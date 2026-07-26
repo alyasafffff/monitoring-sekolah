@@ -206,9 +206,13 @@ class JurnalController extends Controller
             }
         }
 
-        // 3. REVISI URUTAN AKHIR: Balikkan kembali list yang sudah bersih 
-        // agar riwayat mengajar JAM PALING SIANG (terbaru) tetap berada di posisi teratas HP
-        $finalResult = array_reverse($groupedRiwayat);
+        $finalResult = collect($groupedRiwayat)
+            ->sortByDesc(function ($item) {
+                // Menggabungkan tanggal dan jam untuk patokan sorting dari terbaru ke terlama
+                return $item->tanggal . ' ' . $item->jam_mulai;
+            })
+            ->values() // Reset index array agar rapi saat dikirim sebagai JSON
+            ->all();
 
         return response()->json([
             'success' => true,

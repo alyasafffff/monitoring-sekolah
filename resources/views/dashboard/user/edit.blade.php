@@ -27,15 +27,19 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label">NIP / Username</label>
+                                <label class="form-label">NIP</label>
                                 <input type="text"
                                     name="nip"
                                     id="nip_edit"
                                     class="form-control @error('nip') is-invalid @enderror"
                                     value="{{ old('nip') ?? $user->nip }}"
+                                    minlength="10"
+                                    maxlength="18"
                                     required>
+
+                                {{-- Ubah pesan error manual menjadi variabel $message bawaan Laravel --}}
                                 @error('nip')
-                                <div class="invalid-feedback">NIP sudah terdaftar oleh pengguna lain.</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
@@ -100,6 +104,19 @@
     // Hanya angka untuk NIP
     document.getElementById('nip_edit').addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Validasi saat form disubmit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let nipValue = document.getElementById('nip_edit').value;
+        
+        if (nipValue.length < 10) {
+            e.preventDefault(); // Mencegah form dikirim
+            alert('Gagal! NIP harus berisi minimal 10 angka.');
+        } else if (nipValue.length > 18) {
+            e.preventDefault(); // Mencegah form dikirim
+            alert('Gagal! NIP tidak boleh lebih dari 18 angka.');
+        }
     });
 </script>
 @endsection

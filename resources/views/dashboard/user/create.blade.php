@@ -7,17 +7,17 @@
             <div class="card shadow border-0">
                 <div class="card-header bg-white fw-bold">Tambah User Baru</div>
                 <div class="card-body">
-                    
+
                     {{-- Alert Umum jika ada error --}}
                     @if ($errors->any())
-                        <div class="alert alert-danger border-0 shadow-sm py-2">
-                            <small class="fw-bold">Gagal simpan! Silakan periksa kembali kolom yang bertanda merah.</small>
-                        </div>
+                    <div class="alert alert-danger border-0 shadow-sm py-2">
+                        <small class="fw-bold">Gagal simpan! Silakan periksa kembali kolom yang bertanda merah.</small>
+                    </div>
                     @endif
 
                     <form action="{{ route('users.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
-                        
+
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Role / Jabatan</label>
@@ -25,9 +25,9 @@
                                     <option value="">-- Pilih Jabatan --</option>
                                     <option value="guru" {{ old('role') == 'guru' ? 'selected' : '' }}>Guru Pengajar</option>
                                     <option value="bk" {{ old('role') == 'bk' ? 'selected' : '' }}>Guru BK</option>
-                                    
-                                    @if(!$sudahAdaKepsek) 
-                                        <option value="kepsek" {{ old('role') == 'kepsek' ? 'selected' : '' }}>Kepala Sekolah</option>
+
+                                    @if(!$sudahAdaKepsek)
+                                    <option value="kepsek" {{ old('role') == 'kepsek' ? 'selected' : '' }}>Kepala Sekolah</option>
                                     @endif
 
                                     <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
@@ -35,23 +35,27 @@
                                 @error('role') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
                                 @if($sudahAdaKepsek)
-                                    <small class="text-danger fst-italic mt-1 d-block" style="font-size: 11px;">
-                                        *Opsi Kepala Sekolah disembunyikan karena akun Kepsek sudah ada.
-                                    </small>
+                                <small class="text-danger fst-italic mt-1 d-block" style="font-size: 11px;">
+                                    *Opsi Kepala Sekolah disembunyikan karena akun Kepsek sudah ada.
+                                </small>
                                 @endif
                             </div>
-                            
+
                             <div class="col-md-6">
-                                <label class="form-label">NIP / Username Login</label>
-                                <input type="text" 
-                                       name="nip" 
-                                       id="nip_user"
-                                       class="form-control @error('nip') is-invalid @enderror" 
-                                       value="{{ old('nip') }}" 
-                                       placeholder="Masukkan NIP unik" 
-                                       required>
-                                @error('nip') 
-                                    <div class="invalid-feedback">NIP sudah terdaftar atau format salah.</div> 
+                                <label class="form-label">NIP</label>
+                                <input type="text"
+                                    name="nip"
+                                    id="nip_user"
+                                    class="form-control @error('nip') is-invalid @enderror"
+                                    value="{{ old('nip') }}"
+                                    minlength="10"
+                                    maxlength="18"
+                                    placeholder="Masukkan NIP unik"
+                                    required>
+
+                                {{-- UBAH BAGIAN INI --}}
+                                @error('nip')
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                         </div>
@@ -102,5 +106,18 @@
     document.getElementById('nip_user').addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '');
     });
+
+    // Validasi saat form disubmit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let nipValue = document.getElementById('nip_user').value;
+
+        if (nipValue.length < 10) {
+            e.preventDefault(); // Mencegah form dikirim
+            alert('Gagal! NIP harus berisi minimal 10 angka.');
+        } else if (nipValue.length > 18) {
+            e.preventDefault(); // Mencegah form dikirim
+            alert('Gagal! NIP tidak boleh lebih dari 18 angka.');
+        }
+    });
 </script>
-@endsection 
+@endsection

@@ -54,11 +54,15 @@ class UserWebController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nip' => 'required|unique:users,nip',
+            'nip' => 'required|numeric|digits_between:10,18|unique:users,nip',
             'name' => 'required|string',
             'role' => 'required|in:admin,bk,kepsek,guru',
             'password' => 'required|min:6',
-            'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Validasi Foto
+            'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
+        ], [
+            'nip.digits_between' => 'NIP minimal 10 angka dan maksimal 18 angka.',
+            'nip.numeric' => 'NIP hanya boleh berisi angka.',
+            'nip.unique' => 'NIP sudah terdaftar di sistem.'
         ]);
 
         // A. Proses Upload Foto (Jika ada)
@@ -96,10 +100,14 @@ class UserWebController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'nip' => 'required|unique:users,nip,' . $id,
+            'nip' => 'required|numeric|digits_between:10,18|unique:users,nip,' . $id,
             'name' => 'required|string',
             'role' => 'required|in:admin,bk,kepsek,guru',
             'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ], [
+            'nip.digits_between' => 'NIP minimal 10 angka dan maksimal 18 angka.',
+            'nip.numeric' => 'NIP hanya boleh berisi angka.',
+            'nip.unique' => 'NIP sudah terdaftar di sistem.'
         ]);
 
         // Data dasar
