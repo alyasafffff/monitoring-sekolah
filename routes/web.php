@@ -56,6 +56,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('jam-config', JamPelajaranConfigController::class)->except(['create', 'show', 'edit', 'update']);
         Route::get('/admin/rekap-presensi', [RekapWebController::class, 'index'])->name('rekap.index');
         Route::get('/admin/rekap/export', [RekapWebController::class, 'export'])->name('rekap.export');
+        Route::put('/dashboard/rekap/update-status', [RekapWebController::class, 'updateStatus'])->name('rekap.update_status');
     });
 
     // --- GROUP KHUSUS BK ---

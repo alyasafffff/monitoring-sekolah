@@ -37,10 +37,6 @@ class DashboardController extends Controller
             ));
         }
 
-        // 2. LOGIKA GURU BK (MEMANTAU 15 KELAS - REAL TIME)
-        // 2. LOGIKA GURU BK
-        // 2. LOGIKA GURU BK
-        // 2. LOGIKA GURU BK
         // 2. LOGIKA GURU BK
         if ($user->role === 'bk') {
 
@@ -137,19 +133,35 @@ class DashboardController extends Controller
                 ->distinct('presensi_detail.siswa_id')
                 ->count();
 
-            // 2. TREN PRESENSI (7 Hari Terakhir)
+            // 2. TREN PRESENSI (7 Hari Terakhir - Melewati Hari Minggu)
             $chartData = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $date = Carbon::today()->subDays($i);
-                $count = DB::table('presensi_detail')
-                    ->join('jurnals', 'presensi_detail.jurnal_id', '=', 'jurnals.id')
-                    ->where('jurnals.tanggal', $date->toDateString())
-                    ->where('presensi_detail.status', 'Alpha')
-                    ->count();
-                $chartData[] = ['label' => $date->format('d M'), 'value' => $count];
+            $hariAktif = 0;
+            $tanggalCek = Carbon::today(); // Mulai dari hari ini
+
+            while ($hariAktif < 6) {
+                // Mengecek apakah hari ini BUKAN hari Minggu
+                if (!$tanggalCek->isSunday()) {
+                    $dateStr = $tanggalCek->toDateString();
+                    
+                    $count = DB::table('presensi_detail')
+                        ->join('jurnals', 'presensi_detail.jurnal_id', '=', 'jurnals.id')
+                        ->where('jurnals.tanggal', $dateStr)
+                        ->where('presensi_detail.status', 'Alpha')
+                        ->count();
+                    
+                    // Gunakan array_unshift agar data terurut dari masa lalu ke masa kini
+                    array_unshift($chartData, [
+                        'label' => $tanggalCek->format('d M'), 
+                        'value' => $count
+                    ]);
+
+                    $hariAktif++; // Hitungan bertambah hanya jika bukan hari Minggu
+                }
+                
+                // Mundur satu hari untuk pengecekan loop selanjutnya
+                $tanggalCek->subDay();
             }
 
-            // 3. MONITOR KESELARASAN MATERI (Query yang sudah diperbaiki)
             // 3. MONITOR KESELARASAN MATERI (Dikelompokkan per Mapel & Kelas)
             $monitorMateri = DB::table('jurnals')
                 ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
@@ -177,6 +189,7 @@ class DashboardController extends Controller
                 ->orderBy('mata_pelajaran.nama_mapel')
                 ->get();
 
+            // INI YANG TADI TERHAPUS: MENGIRIM DATA KE VIEW KEPSEK
             return view('dashboard.kepsek', compact(
                 'user',
                 'totalSiswa',

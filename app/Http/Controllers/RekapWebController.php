@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use App\Exports\SiswaPresensiExport;
 use Maatwebsite\Excel\Facades\Excel;
 
+
 class RekapWebController extends Controller
 {
     public function index(Request $request)
@@ -32,6 +33,130 @@ class RekapWebController extends Controller
         return Excel::download(new SiswaPresensiExport($rekapData), $namaFile);
     }
 
+    // ==========================================
+    // FUNGSI BARU: UPDATE STATUS OLEH ADMIN
+    // ==========================================
+    public function updateStatus(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        if (!$user || $user->role !== 'admin') {
+            return back()->with('error', 'Akses ditolak. Hanya Admin yang dapat mengubah data rekapitulasi.');
+        }
+
+        $request->validate([
+            'siswa_id'   => 'required|integer',
+            'tanggal'    => 'required|date',
+            'status'     => 'required|in:H,I,S,A',
+            'bukti_foto' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048' 
+        ]);
+
+        $siswaId = $request->siswa_id;
+        $tanggal = $request->tanggal;
+        $statusBaru = $request->status; // Ini isinya 'H', 'I', 'S', atau 'A'
+
+        // --- TAMBAHAN BARU: Mapping Status untuk Tabel presensi_detail ---
+        $mapStatusPresensi = [
+            'H' => 'Hadir',
+            'I' => 'Izin',
+            'S' => 'Sakit',
+            'A' => 'Alpha'
+        ];
+        $statusPresensiFull = $mapStatusPresensi[$statusBaru];
+
+        $pathBukti = null;
+        if ($request->hasFile('bukti_foto')) {
+            $file = $request->file('bukti_foto');
+            $namaFile = time() . '_revisi_' . $file->getClientOriginalName();
+            $pathBukti = $file->storeAs('bukti_izin', $namaFile, 'public'); 
+        }
+
+        $siswa = DB::table('siswa')->where('id', $siswaId)->first();
+
+        if ($siswa) {
+            // --- CARI STATUS LAMA UNTUK LOG HISTORY ---
+            $statusLama = '-';
+            $cekIzin = DB::table('izin_siswa')->where('siswa_id', $siswaId)->where('tanggal_izin', $tanggal)->first();
+            if ($cekIzin) {
+                $statusLama = ($cekIzin->status == 'Izin') ? 'I' : 'S';
+            } else {
+                $cekPresensi = DB::table('presensi_detail')
+                    ->join('jurnals', 'presensi_detail.jurnal_id', '=', 'jurnals.id')
+                    ->where('presensi_detail.siswa_id', $siswaId)
+                    ->where('jurnals.tanggal', $tanggal)
+                    ->value('presensi_detail.status');
+                
+                if ($cekPresensi) {
+                    $char = substr($cekPresensi, 0, 1);
+                    $statusLama = ($char == 'D') ? 'I' : $char;
+                }
+            }
+
+            // --- PROSES TIMPA DATA KE PRESENSI_DETAIL ---
+            $jurnalIds = DB::table('jurnals')
+                ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
+                ->where('jadwal_pelajaran.kelas_id', $siswa->kelas_id)
+                ->where('jurnals.tanggal', $tanggal)
+                ->pluck('jurnals.id');
+
+            if ($jurnalIds->isNotEmpty()) {
+                DB::table('presensi_detail')
+                    ->whereIn('jurnal_id', $jurnalIds)
+                    ->where('siswa_id', $siswaId)
+                    // GUNAKAN $statusPresensiFull DI SINI
+                    ->update(['status' => $statusPresensiFull]); 
+            }
+
+            // --- PROSES TIMPA DATA KE IZIN_SISWA ---
+            if (in_array($statusBaru, ['I', 'S'])) {
+                $statusEnum = ($statusBaru == 'I') ? 'Izin' : 'Sakit';
+
+                if ($cekIzin) {
+                    $updateData = ['status' => $statusEnum];
+                    if ($pathBukti) {
+                        $updateData['bukti_foto'] = $pathBukti;
+                    }
+                    DB::table('izin_siswa')->where('id', $cekIzin->id)->update($updateData);
+                } else {
+                    DB::table('izin_siswa')->insert([
+                        'siswa_id'       => $siswaId,
+                        'wali_kelas_id'  => $user->id, 
+                        'tanggal_izin'   => $tanggal,
+                        'status'         => $statusEnum,
+                        'keterangan'     => 'Direvisi oleh Admin melalui rekapitulasi',
+                        'bukti_foto'     => $pathBukti,
+                        'created_at'     => now(),
+                        'updated_at'     => now()
+                    ]);
+                }
+            } else {
+                DB::table('izin_siswa')
+                    ->where('siswa_id', $siswaId)
+                    ->where('tanggal_izin', $tanggal)
+                    ->delete();
+            }
+
+            // --- PROSES INSERT LOG HISTORY ---
+            if ($statusLama !== $statusBaru) {
+                DB::table('log_revisi_presensi')->insert([
+                    'admin_id'         => $user->id,
+                    'siswa_id'         => $siswaId,
+                    'tanggal_presensi' => $tanggal,
+                    'status_lama'      => $statusLama,
+                    'status_baru'      => $statusBaru,
+                    'keterangan'       => 'Revisi data via halaman rekapitulasi',
+                    'bukti_foto'       => $pathBukti, // <--- PASTIKAN BARIS INI ADA
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Status siswa berhasil direvisi dan dicatat di riwayat.');
+    }
+
+    // FUNGSI INI UNTUK MENGAMBIL DATA AGAR TIDAK DUPLIKAT
     // FUNGSI INI UNTUK MENGAMBIL DATA AGAR TIDAK DUPLIKAT
     private function getRekapData(Request $request)
     {
@@ -49,33 +174,28 @@ class RekapWebController extends Controller
         $dataSiswa = [];
         $listTanggal = [];
         $infoKelas = null;
+        $historyRevisi = []; // <-- Inisialisasi array kosong untuk history
 
         if ($selectedKelas) {
             $infoKelas = DB::table('kelas')->where('id', $selectedKelas)->first();
 
-            // 2. Logika Penentuan Rentang Tanggal (REVISI DISINI)
+            // 2. Logika Penentuan Rentang Tanggal
             if ($tipe == 'bulanan') {
-                // Membuat tanggal mulai dari awal bulan_awal
                 $start = Carbon::createFromDate($tahun, $bulanAwal, 1)->startOfMonth();
-
-                // Membuat tanggal akhir dari akhir bulan_akhir
                 $end = Carbon::createFromDate($tahun, $bulanAkhir, 1)->endOfMonth();
 
-                // Keamanan: Jika admin pilih bulan_akhir lebih kecil dari bulan_awal, 
-                // kita samakan saja biar sistem tidak crash
+                // Keamanan rentang waktu
                 if ($end->lt($start)) {
                     $end = $start->copy()->endOfMonth();
                 }
 
-                // Looping untuk memasukkan semua tanggal dalam rentang tersebut
                 for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
-                    // Sesuai kesepakatan awal: Hari Minggu di-skip (tidak ada KBM)
                     if (!$date->isSunday()) {
                         $listTanggal[] = $date->format('Y-m-d');
                     }
                 }
             } else {
-                // Mode Semester (Tetap mengacu pada Jurnal yang sudah ada)
+                // Mode Semester
                 $startMonth = ($semester == '1') ? 7 : 1;
                 $endMonth = ($semester == '1') ? 12 : 6;
                 $start = Carbon::createFromDate($tahun, $startMonth, 1)->startOfMonth();
@@ -91,10 +211,10 @@ class RekapWebController extends Controller
                     ->toArray();
             }
 
-            // 3. Ambil Data Dasar (Siswa) - Tetap sama
+            // 3. Ambil Data Dasar (Siswa)
             $siswa = DB::table('siswa')->where('kelas_id', $selectedKelas)->orderBy('nama_siswa')->get();
 
-            // 4. Ambil Data Transaksi (Presensi & Izin) - Tetap menggunakan $listTanggal yang baru
+            // 4. Ambil Data Transaksi (Presensi & Izin)
             $presensiRaw = DB::table('presensi_detail')
                 ->join('jurnals', 'presensi_detail.jurnal_id', '=', 'jurnals.id')
                 ->join('jadwal_pelajaran', 'jurnals.jadwal_id', '=', 'jadwal_pelajaran.id')
@@ -108,9 +228,7 @@ class RekapWebController extends Controller
                 ->select('siswa_id', 'tanggal_izin as tanggal', 'status')
                 ->get();
 
-            // --- Logika mapping tempLookup dan status harian (Hierarki S > I > H > A) ---
-            // (Sama seperti kodingan kamu sebelumnya, gunakan $listTanggal yang dinamis)
-
+            // --- Logika mapping tempLookup ---
             $tempLookup = [];
             foreach ($presensiRaw as $p) {
                 $char = substr($p->status, 0, 1);
@@ -161,13 +279,27 @@ class RekapWebController extends Controller
                 ];
 
                 return [
-                    'nama' => $s->nama_siswa,
-                    'nisn' => $s->nisn,
-                    'grid' => $kehadiran,
-                    'total' => $total,
+                    'id'     => $s->id,
+                    'nama'   => $s->nama_siswa,
+                    'nisn'   => $s->nisn,
+                    'grid'   => $kehadiran,
+                    'total'  => $total,
                     'persen' => $persen
                 ];
             });
+
+            // --- 7. AMBIL DATA HISTORY REVISI ---
+            $historyRevisi = DB::table('log_revisi_presensi')
+                ->join('siswa', 'log_revisi_presensi.siswa_id', '=', 'siswa.id')
+                ->join('users', 'log_revisi_presensi.admin_id', '=', 'users.id')
+                ->where('siswa.kelas_id', $selectedKelas) // Ambil yang sekelas saja
+                ->select(
+                    'log_revisi_presensi.*',
+                    'siswa.nama_siswa',
+                    'users.name as nama_admin' 
+                )
+                ->orderBy('log_revisi_presensi.created_at', 'desc') // Urutkan dari yang terbaru
+                ->get();
         }
 
         // Return semua data ke View
@@ -177,11 +309,12 @@ class RekapWebController extends Controller
             'daftarKelas' => $daftarKelas,
             'tipe' => $tipe,
             'selectedKelas' => $selectedKelas,
-            'bulanAwal' => $bulanAwal, // <--- Ini penting
-            'bulanAkhir' => $bulanAkhir, // <--- Ini penting
+            'bulanAwal' => $bulanAwal,
+            'bulanAkhir' => $bulanAkhir,
             'selectedTahun' => $tahun,
             'infoKelas' => $infoKelas,
-            'semester' => $semester
+            'semester' => $semester,
+            'historyRevisi' => $historyRevisi // <-- Data dilempar ke view
         ];
     }
 }
